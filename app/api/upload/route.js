@@ -20,7 +20,8 @@ export async function POST(req) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const name = file.name || `photo-${Date.now()}.jpg`;
+    const override = form.get("filename");
+    const name = (typeof override === "string" && override) || file.name || `photo-${Date.now()}.jpg`;
     const res = await uploadPhoto(drive, folderId, name, file.type, buffer);
     return NextResponse.json({ ok: true, id: res.id, name: res.name });
   } catch (err) {

@@ -101,3 +101,17 @@ legend{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spa
   .row.c2,.row.c3{grid-template-columns:1fr}
   .stepper .s .lbl{display:none}
 }
+
+/* multi-select chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:.86rem;padding:7px 12px;border:1px solid var(--line);background:#fff;
+  color:var(--ink);border-radius:999px;cursor:pointer;transition:all .12s}
+.chip:hover{border-color:var(--steel)}
+.chip.on{background:var(--steel);border-color:var(--steel);color:#fff}
+
+/* compact labeled photo slots */
+.slot{border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:12px;background:rgba(255,255,255,.4)}
+.slot-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.slot-label{font-weight:600;font-size:.95rem}
+.slot-count{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.drop.sm{padding:16px;font-size:.9rem;color:var(--muted)}
