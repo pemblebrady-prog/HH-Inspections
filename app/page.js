@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const FEE = process.env.NEXT_PUBLIC_CERT_FEE || "135";
 
@@ -93,12 +93,15 @@ export default function Page() {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState(null);
 
+  // Always start each step at the top of the page.
+  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: "auto" }); }, [step]);
+
   const [f, setF] = useState({
     date: "",
     inspectorName: "", clientName: "", sendReportTo: "", ageOfHome: "", dimensions: "",
     ...Object.fromEntries(SINGLE.map((s) => [s.id, ""])),
     ...Object.fromEntries(MULTI.map((m) => [m.id, []])),
-    otherComments: "", generalComments: "",
+    generalComments: "",
     cardname: "", cardnum: "", exp: "", cvc: "",
   });
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
@@ -249,8 +252,7 @@ export default function Page() {
             <fieldset>
               <legend>Sketch &amp; comments</legend>
               <PhotoSlot label="Home sketch (image upload)" sub="Draw the home sketch on paper or a tablet, then upload a photo of it here." items={sketch} onAdd={addSketch} onRemove={() => setSketch([])} max={1} />
-              <div className="field" style={{ marginTop: 16 }}><label htmlFor="otherComments">Other comments</label><textarea id="otherComments" value={f.otherComments} onChange={set("otherComments")} /></div>
-              <div className="field"><label htmlFor="generalComments">General comments</label><textarea id="generalComments" value={f.generalComments} onChange={set("generalComments")} /></div>
+              <div className="field" style={{ marginTop: 16 }}><label htmlFor="generalComments">General comments</label><textarea id="generalComments" value={f.generalComments} onChange={set("generalComments")} /></div>
             </fieldset>
 
             <div className="actions"><span /><button className="btn" onClick={() => { if (validate(["inspectorName", "clientName", "sendReportTo", "date"])) setStep(2); }}>Continue to photos →</button></div>
@@ -322,10 +324,8 @@ export default function Page() {
               <div className="receipt">
                 <div><span>Submission ID</span><span>{result.id}</span></div>
                 <div><span>Client</span><span>{f.clientName}</span></div>
-                <div><span>Drive folder</span><span>{result.path || "—"}</span></div>
                 <div><span>Files uploaded</span><span>{result.photos}</span></div>
                 <div><span>Fee paid</span><span>${FEE}.00</span></div>
-                <div><span>Drive storage</span><span>{result.simulated ? "simulated (not configured)" : "saved to Google Drive"}</span></div>
               </div>
               <button className="btn ghost" onClick={() => window.location.reload()}>Start another submission</button>
             </div>

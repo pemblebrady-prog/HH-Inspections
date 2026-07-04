@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDrive, rootFolderId, ensureFolderPath, writeMetadata } from "../../../lib/drive";
+import { getDrive, rootFolderId, ensureFolderPath, appendSubmission } from "../../../lib/drive";
 
 export const runtime = "nodejs";
 
@@ -10,10 +10,9 @@ function submissionId() {
 function monthYearFrom(dateStr) {
   const d = dateStr ? new Date(dateStr + "T00:00:00") : new Date();
   if (isNaN(d)) return "Undated";
-  return d.toLocaleString("en-US", { month: "long" }) + " " + d.getFullYear(); // "July 2025"
+  return d.toLocaleString("en-US", { month: "long" }) + " " + d.getFullYear();
 }
 
-// Keep folder names filesystem-friendly.
 function clean(s) {
   return (s || "").trim().replace(/[\\/:*?"<>|]/g, "-") || "Unknown";
 }
@@ -27,11 +26,13 @@ export async function POST(req) {
   }
 
   const id = submissionId();
+  const submittedAt = new Date().toISOString();
   const date = (data.date || new Date().toISOString().slice(0, 10)).trim();
   const monthYear = monthYearFrom(date);
   const inspector = clean(data.inspectorName);
   const client = clean(data.clientName);
-  const path = [monthYear, inspector, client]; // Month Year / Inspector / Client
+  const path = [monthYear, inspector, client];
+  const amountPaid = Number(process.env.NEXT_PUBLIC_CERT_FEE || 135);
 
   const drive = getDrive();
   if (!drive) {
@@ -40,14 +41,20 @@ export async function POST(req) {
 
   try {
     const folderId = await ensureFolderPath(drive, rootFolderId(), path);
-    await writeMetadata(drive, folderId, {
+    const driveLink = `https://drive.google.com/drive/folders/${folderId}`;
+
+    // Record to the central tracking index (no JSON left in the client folder).
+    await appendSubmission(drive, rootFolderId(), {
       submissionId: id,
-      submittedAt: new Date().toISOString(),
-      report: data,
-      feePaid: Number(process.env.NEXT_PUBLIC_CERT_FEE || 135),
-      status: "Paid · queued for engineer",
+      submittedAt,
+      inspectorName: (data.inspectorName || "").trim(),
+      clientName: (data.clientName || "").trim(),
+      inspectionDate: date,
+      driveLink,
+      amountPaid,
     });
-    return NextResponse.json({ ok: true, submissionId: id, folderId, path: path.join(" / ") });
+
+    return NextResponse.json({ ok: true, submissionId: id, folderId, path: path.join(" / "), driveLink });
   } catch (err) {
     console.error("submit error", err);
     return NextResponse.json({ ok: false, error: err.message || "Drive error" }, { status: 500 });
