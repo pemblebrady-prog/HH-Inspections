@@ -50,6 +50,7 @@ export async function POST(req) {
       submissionId: id, submittedAt,
       inspectorName: (data.inspectorName || "").trim(),
       clientName: (data.clientName || "").trim(),
+      inspectionCompany: (data.inspectionCompany || "").trim(), // used by the letter generator (next step)
       inspectionDate: date, driveLink, amountPaid,
     });
 

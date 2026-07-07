@@ -5,8 +5,8 @@ import PhotoSlot from "./PhotoSlot";
 
 const byId = (id) => SINGLE.find((s) => s.id === id);
 
-export default function MobileWizard({ form }) {
-  const { f, set, toggle, invalid, validate, sketch, addSketch, setSketch, photos, addTo, removeFrom, totalPhotos, busy, progress, payAndSubmit } = form;
+export default function MobileWizard({ form, onSwitchView, switchLabel }) {
+  const { f, set, toggle, invalid, validate, companies, sketch, addSketch, setSketch, photos, addTo, removeFrom, totalPhotos, busy, progress, payAndSubmit } = form;
 
   // Build the ordered list of screens.
   const fieldScreens = [
@@ -17,6 +17,14 @@ export default function MobileWizard({ form }) {
         <Field id="clientName" label="Client name" req f={f} set={set} invalid={invalid} />
         <Field id="sendReportTo" label="Send report to (email)" type="email" req f={f} set={set} invalid={invalid} placeholder="you@company.com" />
         <div className={"field" + (invalid.date ? " invalid" : "")}><label className="req" htmlFor="date">Date inspected</label><input id="date" type="date" value={f.date} onChange={set("date")} />{invalid.date && <div className="err">Required.</div>}</div>
+        <div className="field">
+          <label htmlFor="inspectionCompany">Inspecting on behalf of a company? (optional)</label>
+          <select id="inspectionCompany" value={f.inspectionCompany} onChange={set("inspectionCompany")}>
+            <option value="">None — use House &amp; Home branding</option>
+            {companies.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
+          </select>
+          <p className="hint">Don't see your company? <a href="/companies" target="_blank" rel="noreferrer">Add it here</a>.</p>
+        </div>
       </>),
     },
     {
@@ -95,6 +103,7 @@ export default function MobileWizard({ form }) {
     <div className="wiz">
       <header><div className="bar">
         <a className="brand" href="#"><b>House&nbsp;<span>&amp;</span>&nbsp;Home</b><span className="sub">Inspector Portal</span></a>
+        <div className="who">{onSwitchView && <button className="viewswitch" onClick={onSwitchView}>{switchLabel}</button>}</div>
       </div></header>
 
       <div className="wiz-progress"><div style={{ width: pct + "%" }} /></div>

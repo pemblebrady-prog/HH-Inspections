@@ -148,9 +148,8 @@ table.track a:hover{text-decoration:underline}
 .slot.big .drop{padding:30px;font-size:1rem}
 .slot.big .thumb{}
 
-/* view toggle */
-.viewtoggle{position:fixed;bottom:14px;right:14px;z-index:40;background:var(--ink);color:var(--stone);
-  border:none;border-radius:999px;padding:9px 15px;font:inherit;font-size:.8rem;cursor:pointer;
-  box-shadow:0 6px 18px -6px rgba(19,36,48,.5);opacity:.85}
-.viewtoggle:hover{opacity:1}
-@media (max-width:720px){ .viewtoggle{bottom:82px} }
+/* header view-switch button (top-right) */
+.viewswitch{background:transparent;border:1px solid var(--line);color:var(--muted);
+  border-radius:999px;padding:6px 13px;font:inherit;font-size:.8rem;cursor:pointer;white-space:nowrap}
+.viewswitch:hover{border-color:var(--steel);color:var(--steel)}
+@media (max-width:720px){ .wiz-progress{top:62px} }

@@ -25,10 +25,9 @@ export default function Page() {
 
   return (
     <>
-      {isMobile ? <MobileWizard form={form} /> : <DesktopForm form={form} />}
-      <button className="viewtoggle" onClick={() => setManual(!isMobile)}>
-        {isMobile ? "Switch to desktop view" : "Switch to mobile view"}
-      </button>
+      {isMobile
+        ? <MobileWizard form={form} onSwitchView={() => setManual(false)} switchLabel="Desktop view" />
+        : <DesktopForm form={form} onSwitchView={() => setManual(true)} switchLabel="Mobile view" />}
     </>
   );
 }
@@ -47,7 +46,7 @@ function Success({ result }) {
               <path d="M44 61l11 11 22-24" stroke="#3f7a52" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <h2>Submitted &amp; paid</h2>
-            <p className="intro" style={{ maxWidth: "44ch", margin: "12px auto 0" }}>Your report is in the engineer's queue. The certificate goes to the email you provided.</p>
+            <p className="intro" style={{ maxWidth: "44ch", margin: "12px auto 0" }}>Your report is in the engineer's queue. You will receive the certified letter within the next several business days at the email address provided.</p>
             <div className="receipt">
               <div><span>Submission ID</span><span>{result.id}</span></div>
               <div><span>Client</span><span>{result.clientName}</span></div>

@@ -3,8 +3,8 @@ import { useState, useEffect } from "react";
 import { SINGLE, MULTI, PHOTO_SLOTS, FEE } from "../lib/formConfig";
 import PhotoSlot from "./PhotoSlot";
 
-export default function DesktopForm({ form }) {
-  const { f, set, toggle, invalid, validate, sketch, addSketch, setSketch, photos, addTo, removeFrom, totalPhotos, busy, progress, payAndSubmit } = form;
+export default function DesktopForm({ form, onSwitchView, switchLabel }) {
+  const { f, set, toggle, invalid, validate, companies, sketch, addSketch, setSketch, photos, addTo, removeFrom, totalPhotos, busy, progress, payAndSubmit } = form;
   const [step, setStep] = useState(1);
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: "auto" }); }, [step]);
   const cls = (k) => "field" + (invalid[k] ? " invalid" : "");
@@ -14,7 +14,7 @@ export default function DesktopForm({ form }) {
       <div className="demo">Live prototype — payment is stubbed (always passes) · files save to Google Drive when configured</div>
       <header><div className="bar">
         <a className="brand" href="#"><b>House&nbsp;<span>&amp;</span>&nbsp;Home</b><span className="sub">Inspector Portal</span></a>
-        <div className="who"><span className="mono">Cert submission</span></div>
+        <div className="who">{onSwitchView && <button className="viewswitch" onClick={onSwitchView}>{switchLabel}</button>}</div>
       </div></header>
 
       <div className="shell">
@@ -48,6 +48,14 @@ export default function DesktopForm({ form }) {
                 <select id="inspectionType" value={f.inspectionType} onChange={set("inspectionType")}>
                   <option value="">Choose one</option>{SINGLE[0].opts.map((o) => <option key={o}>{o}</option>)}
                 </select>
+              </div>
+              <div className="field">
+                <label htmlFor="inspectionCompany">Inspecting on behalf of a company? (optional)</label>
+                <select id="inspectionCompany" value={f.inspectionCompany} onChange={set("inspectionCompany")}>
+                  <option value="">None — use House &amp; Home branding</option>
+                  {companies.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
+                </select>
+                <p className="hint">Don't see your company? <a href="/companies" target="_blank" rel="noreferrer">Add it here</a> — it'll show up in this list right after.</p>
               </div>
             </fieldset>
 

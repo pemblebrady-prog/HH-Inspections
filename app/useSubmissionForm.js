@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SINGLE, MULTI, PHOTO_SLOTS, compress } from "../lib/formConfig";
 
 export function useSubmissionForm() {
   const [f, setF] = useState({
-    date: "",
+    date: "", inspectionCompany: "",
     inspectorName: "", clientName: "", sendReportTo: "", ageOfHome: "", dimensions: "",
     ...Object.fromEntries(SINGLE.map((s) => [s.id, ""])),
     ...Object.fromEntries(MULTI.map((m) => [m.id, []])),
@@ -16,6 +16,12 @@ export function useSubmissionForm() {
   const toggle = (k, opt) => setF((s) => {
     const cur = s[k]; return { ...s, [k]: cur.includes(opt) ? cur.filter((x) => x !== opt) : [...cur, opt] };
   });
+
+  // Companies for the optional wizard dropdown. Managed separately at /companies.
+  const [companies, setCompanies] = useState([]);
+  useEffect(() => {
+    fetch("/api/companies").then((r) => r.json()).then((d) => { if (d.ok) setCompanies(d.companies || []); }).catch(() => {});
+  }, []);
 
   const [sketch, setSketch] = useState([]);
   const [photos, setPhotos] = useState(Object.fromEntries(PHOTO_SLOTS.map((s) => [s.id, []])));
@@ -61,19 +67,29 @@ export function useSubmissionForm() {
       if (!sres.ok) throw new Error(sres.error || "Submit failed");
 
       const queue = [];
-      sketch.forEach((p) => queue.push({ file: p.file, name: "Home Sketch.jpg" }));
+      sketch.forEach((p) => queue.push({ file: p.file, name: "Home Sketch.jpg", label: "Home Sketch" }));
       PHOTO_SLOTS.forEach((slot) => {
-        photos[slot.id].forEach((p, i) => queue.push({ file: p.file, name: `${slot.n} ${slot.label} - ${i + 1}.jpg` }));
+        photos[slot.id].forEach((p, i) => queue.push({ file: p.file, name: `${slot.n} ${slot.label} - ${i + 1}.jpg`, label: slot.label }));
       });
 
+      const uploaded = []; // {id, label} for each photo actually saved to Drive
       for (let i = 0; i < queue.length; i++) {
         const small = await compress(queue[i].file);
         const fd = new FormData();
         if (sres.folderId) fd.append("folderId", sres.folderId);
         fd.append("filename", queue[i].name);
         fd.append("file", small);
-        await fetch("/api/upload", { method: "POST", body: fd }).catch(() => {});
+        const ures = await fetch("/api/upload", { method: "POST", body: fd }).then((r) => r.json()).catch(() => null);
+        if (ures && ures.ok && ures.id) uploaded.push({ id: ures.id, label: queue[i].label });
         setProgress(Math.round(((i + 1) / Math.max(queue.length, 1)) * 100));
+      }
+
+      // Best-effort draft letter generation — never blocks or fails the submission itself.
+      if (sres.folderId && uploaded.length) {
+        fetch("/api/letters/generate", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ folderId: sres.folderId, report: f, companyName: f.inspectionCompany, images: uploaded }),
+        }).catch(() => {});
       }
 
       setResult({ id: sres.submissionId, simulated: !!sres.simulated, path: sres.path, clientName: f.clientName, photos: queue.length });
@@ -84,6 +100,6 @@ export function useSubmissionForm() {
     } finally { setBusy(false); }
   }
 
-  return { f, set, setVal, toggle, sketch, addSketch, setSketch, photos, addTo, removeFrom,
+  return { f, set, setVal, toggle, companies, sketch, addSketch, setSketch, photos, addTo, removeFrom,
     invalid, validate, totalPhotos, busy, progress, result, payAndSubmit };
 }
