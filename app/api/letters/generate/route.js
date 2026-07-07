@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getDrive, rootFolderId, readCompanies, fileToDataUri, createGoogleDocFromHtml } from "../../../lib/drive";
-import { buildLetterHtml } from "../../../lib/letterTemplate";
+import { getDrive, rootFolderId, readCompanies, fileToDataUri, createGoogleDocFromHtml } from "../../../../lib/drive";
+import { buildLetterHtml } from "../../../../lib/letterTemplate";
 
 export const runtime = "nodejs";
 
