@@ -49,7 +49,7 @@ export default function Tracker() {
             <table className="track">
               <thead>
                 <tr>
-                  <th>Inspector</th><th>Client</th><th>Inspected</th><th>Submitted</th><th>Amount</th><th>Files</th>
+                  <th>Inspector</th><th>Client</th><th>Address</th><th>Inspected</th><th>Submitted</th><th>Amount</th><th>Files</th>
                 </tr>
               </thead>
               <tbody>
@@ -57,6 +57,7 @@ export default function Tracker() {
                   <tr key={r.submissionId || i}>
                     <td>{r.inspectorName || "—"}</td>
                     <td>{r.clientName || "—"}</td>
+                    <td>{r.propertyAddress || "—"}</td>
                     <td>{fmtDate(r.inspectionDate)}</td>
                     <td>{fmtDateTime(r.submittedAt)}</td>
                     <td>${(Number(r.amountPaid) || 0).toFixed(2)}</td>

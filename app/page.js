@@ -50,6 +50,7 @@ function Success({ result }) {
             <div className="receipt">
               <div><span>Submission ID</span><span>{result.id}</span></div>
               <div><span>Client</span><span>{result.clientName}</span></div>
+              <div><span>Property</span><span>{result.propertyAddress}</span></div>
               <div><span>Files uploaded</span><span>{result.photos}</span></div>
               <div><span>Fee paid</span><span>${FEE}.00</span></div>
             </div>

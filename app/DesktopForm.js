@@ -32,22 +32,14 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
 
             <fieldset>
               <legend>Report info</legend>
+              <div className={cls("propertyAddress")}>
+                <label className="req" htmlFor="propertyAddress">Property address</label>
+                <input id="propertyAddress" value={f.propertyAddress} onChange={set("propertyAddress")} placeholder="1318 N Pso Temblon, Sierra Vista, AZ 85635" />
+                {invalid.propertyAddress && <div className="err">Required.</div>}
+              </div>
               <div className="row c2">
                 <div className={cls("inspectorName")}><label className="req" htmlFor="inspectorName">Inspector name</label><input id="inspectorName" value={f.inspectorName} onChange={set("inspectorName")} />{invalid.inspectorName && <div className="err">Required — used for the Drive folder.</div>}</div>
                 <div className={cls("clientName")}><label className="req" htmlFor="clientName">Client name</label><input id="clientName" value={f.clientName} onChange={set("clientName")} />{invalid.clientName && <div className="err">Required — used for the Drive folder.</div>}</div>
-              </div>
-              <div className="row c2">
-                <div className={cls("sendReportTo")}><label className="req" htmlFor="sendReportTo">Send report to (email)</label><input id="sendReportTo" type="email" value={f.sendReportTo} onChange={set("sendReportTo")} placeholder="you@company.com" />{invalid.sendReportTo && <div className="err">Enter a valid email.</div>}</div>
-                <div className={cls("date")}><label className="req" htmlFor="date">Date inspected</label><input id="date" type="date" value={f.date} onChange={set("date")} />{invalid.date && <div className="err">Required — sets the month folder.</div>}</div>
-              </div>
-              <div className="row c2">
-                <div className="field"><label htmlFor="ageOfHome">Age of home</label><input id="ageOfHome" value={f.ageOfHome} onChange={set("ageOfHome")} placeholder="e.g. 1998" /></div>
-                <div className="field"><label htmlFor="dimensions">Dimensions (L x W)</label><input id="dimensions" value={f.dimensions} onChange={set("dimensions")} placeholder="56 x 28" /></div>
-              </div>
-              <div className="field"><label htmlFor="inspectionType">Type of inspection</label>
-                <select id="inspectionType" value={f.inspectionType} onChange={set("inspectionType")}>
-                  <option value="">Choose one</option>{SINGLE[0].opts.map((o) => <option key={o}>{o}</option>)}
-                </select>
               </div>
               <div className="field">
                 <label htmlFor="inspectionCompany">Inspecting on behalf of a company? (optional)</label>
@@ -56,6 +48,20 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
                   {companies.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
                 </select>
                 <p className="hint">Don't see your company? <a href="/companies" target="_blank" rel="noreferrer">Add it here</a> — it'll show up in this list right after.</p>
+              </div>
+              <div className="row c2">
+                <div className={cls("sendReportTo")}><label className="req" htmlFor="sendReportTo">Send report to (email)</label><input id="sendReportTo" type="email" value={f.sendReportTo} onChange={set("sendReportTo")} placeholder="you@company.com" />{invalid.sendReportTo && <div className="err">Enter a valid email.</div>}</div>
+                <div className={cls("date")}><label className="req" htmlFor="date">Date inspected</label><input id="date" type="date" value={f.date} onChange={set("date")} />{invalid.date && <div className="err">Required — sets the month folder.</div>}</div>
+              </div>
+              <div className="row c3">
+                <div className="field"><label htmlFor="ageOfHome">Age of home</label><input id="ageOfHome" value={f.ageOfHome} onChange={set("ageOfHome")} placeholder="e.g. 1998" /></div>
+                <div className="field"><label htmlFor="lengthFt">Length (ft)</label><input id="lengthFt" value={f.lengthFt} onChange={set("lengthFt")} inputMode="decimal" placeholder="64" /></div>
+                <div className="field"><label htmlFor="widthFt">Width (ft)</label><input id="widthFt" value={f.widthFt} onChange={set("widthFt")} inputMode="decimal" placeholder="28" /></div>
+              </div>
+              <div className="field"><label htmlFor="inspectionType">Type of inspection</label>
+                <select id="inspectionType" value={f.inspectionType} onChange={set("inspectionType")}>
+                  <option value="">Choose one</option>{SINGLE[0].opts.map((o) => <option key={o}>{o}</option>)}
+                </select>
               </div>
             </fieldset>
 
@@ -93,7 +99,7 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
               <div className="field" style={{ marginTop: 16 }}><label htmlFor="generalComments">General comments</label><textarea id="generalComments" value={f.generalComments} onChange={set("generalComments")} /></div>
             </fieldset>
 
-            <div className="actions"><span /><button className="btn" onClick={() => { if (validate(["inspectorName", "clientName", "sendReportTo", "date"])) setStep(2); }}>Continue to photos →</button></div>
+            <div className="actions"><span /><button className="btn" onClick={() => { if (validate(["propertyAddress", "inspectorName", "clientName", "sendReportTo", "date"])) setStep(2); }}>Continue to photos →</button></div>
           </section>
         )}
 

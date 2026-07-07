@@ -1,11 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import { SINGLE, MULTI, PHOTO_SLOTS, compress } from "../lib/formConfig";
+import { SINGLE, MULTI, PHOTO_SLOTS, compress, FEE } from "../lib/formConfig";
 
 export function useSubmissionForm() {
   const [f, setF] = useState({
-    date: "", inspectionCompany: "",
-    inspectorName: "", clientName: "", sendReportTo: "", ageOfHome: "", dimensions: "",
+    date: "", inspectionCompany: "", propertyAddress: "",
+    inspectorName: "", clientName: "", sendReportTo: "", ageOfHome: "", lengthFt: "", widthFt: "",
     ...Object.fromEntries(SINGLE.map((s) => [s.id, ""])),
     ...Object.fromEntries(MULTI.map((m) => [m.id, []])),
     generalComments: "",
@@ -92,7 +92,19 @@ export function useSubmissionForm() {
         }).catch(() => {});
       }
 
-      setResult({ id: sres.submissionId, simulated: !!sres.simulated, path: sres.path, clientName: f.clientName, photos: queue.length });
+      // Best-effort payment receipt email — same fire-and-forget pattern.
+      if (f.sendReportTo) {
+        fetch("/api/receipts/send", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: f.sendReportTo, submissionId: sres.submissionId, inspectorName: f.inspectorName,
+            clientName: f.clientName, propertyAddress: f.propertyAddress, inspectionDate: f.date,
+            amountPaid: Number(FEE),
+          }),
+        }).catch(() => {});
+      }
+
+      setResult({ id: sres.submissionId, simulated: !!sres.simulated, path: sres.path, clientName: f.clientName, propertyAddress: f.propertyAddress, photos: queue.length });
       return true;
     } catch (err) {
       alert("Something went wrong: " + err.message);

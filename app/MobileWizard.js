@@ -11,12 +11,16 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
   // Build the ordered list of screens.
   const fieldScreens = [
     {
+      title: "Property address", required: ["propertyAddress"],
+      render: () => (<>
+        <Field id="propertyAddress" label="Property address" req f={f} set={set} invalid={invalid} placeholder="1318 N Pso Temblon, Sierra Vista, AZ 85635" />
+      </>),
+    },
+    {
       title: "Report info", required: ["inspectorName", "clientName", "sendReportTo", "date"],
       render: () => (<>
         <Field id="inspectorName" label="Inspector name" req f={f} set={set} invalid={invalid} />
         <Field id="clientName" label="Client name" req f={f} set={set} invalid={invalid} />
-        <Field id="sendReportTo" label="Send report to (email)" type="email" req f={f} set={set} invalid={invalid} placeholder="you@company.com" />
-        <div className={"field" + (invalid.date ? " invalid" : "")}><label className="req" htmlFor="date">Date inspected</label><input id="date" type="date" value={f.date} onChange={set("date")} />{invalid.date && <div className="err">Required.</div>}</div>
         <div className="field">
           <label htmlFor="inspectionCompany">Inspecting on behalf of a company? (optional)</label>
           <select id="inspectionCompany" value={f.inspectionCompany} onChange={set("inspectionCompany")}>
@@ -25,13 +29,18 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
           </select>
           <p className="hint">Don't see your company? <a href="/companies" target="_blank" rel="noreferrer">Add it here</a>.</p>
         </div>
+        <Field id="sendReportTo" label="Send report to (email)" type="email" req f={f} set={set} invalid={invalid} placeholder="you@company.com" />
+        <div className={"field" + (invalid.date ? " invalid" : "")}><label className="req" htmlFor="date">Date inspected</label><input id="date" type="date" value={f.date} onChange={set("date")} />{invalid.date && <div className="err">Required.</div>}</div>
       </>),
     },
     {
       title: "Home basics",
       render: () => (<>
         <Field id="ageOfHome" label="Age of home" f={f} set={set} placeholder="e.g. 1998" />
-        <Field id="dimensions" label="Dimensions (L x W)" f={f} set={set} placeholder="56 x 28" />
+        <div className="row c2">
+          <Field id="lengthFt" label="Length (ft)" f={f} set={set} placeholder="64" />
+          <Field id="widthFt" label="Width (ft)" f={f} set={set} placeholder="28" />
+        </div>
         <Select s={byId("inspectionType")} f={f} set={set} />
         <Select s={byId("frontFaces")} f={f} set={set} />
       </>),
