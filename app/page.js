@@ -1,72 +1,61 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useSubmissionForm } from "./useSubmissionForm";
+import DesktopForm from "./DesktopForm";
+import MobileWizard from "./MobileWizard";
+import { FEE } from "../lib/formConfig";
 
-function fmtDate(iso) {
-  if (!iso) return "—";
-  const d = new Date(iso.length <= 10 ? iso + "T00:00:00" : iso);
-  if (isNaN(d)) return iso;
-  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-}
-function fmtDateTime(iso) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (isNaN(d)) return iso;
-  return d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
-}
-
-export default function Tracker() {
-  const [rows, setRows] = useState(null);
-  const [err, setErr] = useState(null);
+export default function Page() {
+  const form = useSubmissionForm();
+  const [autoMobile, setAutoMobile] = useState(null); // null until measured (avoids SSR flash)
+  const [manual, setManual] = useState(null);         // user override: true=mobile, false=desktop
 
   useEffect(() => {
-    fetch("/api/submissions")
-      .then((r) => r.json())
-      .then((d) => { if (d.ok) setRows(d.records || []); else setErr(d.error || "Could not load"); })
-      .catch((e) => setErr(String(e)));
+    const check = () => setAutoMobile(window.innerWidth < 720);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
-  const total = rows ? rows.reduce((a, r) => a + (Number(r.amountPaid) || 0), 0) : 0;
+  if (autoMobile === null) return null; // brief, before first measure
+
+  const isMobile = manual !== null ? manual : autoMobile;
+
+  if (form.result) return <Success result={form.result} />;
 
   return (
     <>
+      {isMobile
+        ? <MobileWizard form={form} onSwitchView={() => setManual(false)} switchLabel="Desktop view" />
+        : <DesktopForm form={form} onSwitchView={() => setManual(true)} switchLabel="Mobile view" />}
+    </>
+  );
+}
+
+function Success({ result }) {
+  return (
+    <>
       <header><div className="bar">
-        <a className="brand" href="/"><b>House&nbsp;<span>&amp;</span>&nbsp;Home</b><span className="sub">Submission Tracker</span></a>
-        <div className="who"><span className="mono">Internal</span></div>
+        <a className="brand" href="#"><b>House&nbsp;<span>&amp;</span>&nbsp;Home</b><span className="sub">Inspector Portal</span></a>
       </div></header>
-
-      <div className="shell" style={{ maxWidth: 1080 }}>
-        <div className="track-head">
-          <h2>All submissions</h2>
-          {rows && <div className="track-stats"><span><b>{rows.length}</b> submission{rows.length === 1 ? "" : "s"}</span><span><b>${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</b> collected</span></div>}
-        </div>
-
-        {err && <div className="card"><p className="err">Couldn't load submissions: {err}</p></div>}
-        {!rows && !err && <div className="card"><p className="intro">Loading…</p></div>}
-        {rows && rows.length === 0 && <div className="card"><p className="intro">No submissions yet. They'll appear here the moment an inspector submits.</p></div>}
-
-        {rows && rows.length > 0 && (
-          <div className="table-wrap">
-            <table className="track">
-              <thead>
-                <tr>
-                  <th>Inspector</th><th>Client</th><th>Inspected</th><th>Submitted</th><th>Amount</th><th>Files</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r, i) => (
-                  <tr key={r.submissionId || i}>
-                    <td>{r.inspectorName || "—"}</td>
-                    <td>{r.clientName || "—"}</td>
-                    <td>{fmtDate(r.inspectionDate)}</td>
-                    <td>{fmtDateTime(r.submittedAt)}</td>
-                    <td>${(Number(r.amountPaid) || 0).toFixed(2)}</td>
-                    <td>{r.driveLink ? <a href={r.driveLink} target="_blank" rel="noreferrer">Open ↗</a> : "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div className="shell">
+        <section className="card">
+          <div className="done-wrap">
+            <svg className="seal" viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="54" fill="none" stroke="#3f7a52" strokeWidth="3" /><circle cx="60" cy="60" r="45" fill="none" stroke="#3f7a52" strokeWidth="1.3" />
+              <path d="M44 61l11 11 22-24" stroke="#3f7a52" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <h2>Submitted &amp; paid</h2>
+            <p className="intro" style={{ maxWidth: "44ch", margin: "12px auto 0" }}>Your report is in the engineer's queue. You will receive the certified letter within the next several business days at the email address provided.</p>
+            <div className="receipt">
+              <div><span>Submission ID</span><span>{result.id}</span></div>
+              <div><span>Client</span><span>{result.clientName}</span></div>
+              <div><span>Files uploaded</span><span>{result.photos}</span></div>
+              <div><span>Fee paid</span><span>${FEE}.00</span></div>
+            </div>
+            <button className="btn ghost" onClick={() => window.location.reload()}>Start another submission</button>
           </div>
-        )}
+        </section>
       </div>
     </>
   );
