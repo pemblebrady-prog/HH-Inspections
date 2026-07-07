@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getDrive, rootFolderId, readSubmissions } from "../../../lib/drive";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic"; // always re-fetch from Drive; never cache this response
 
 export async function GET() {
   const drive = getDrive();
