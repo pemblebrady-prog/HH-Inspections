@@ -25,10 +25,22 @@ export default function Page() {
 
   return (
     <>
+      {form.demo && <DemoBar form={form} />}
       {isMobile
         ? <MobileWizard form={form} onSwitchView={() => setManual(false)} switchLabel="Desktop view" />
         : <DesktopForm form={form} onSwitchView={() => setManual(true)} switchLabel="Mobile view" />}
     </>
+  );
+}
+
+function DemoBar({ form }) {
+  return (
+    <div className="demobar" role="region" aria-label="Demo mode">
+      <span className="mono">Demo mode</span>
+      <button className="btn" onClick={form.fillDemo} disabled={form.demoLoading || form.busy}>
+        {form.demoLoading ? "Loading…" : "Fill sample data"}
+      </button>
+    </div>
   );
 }
 
@@ -54,7 +66,13 @@ function Success({ result }) {
               <div><span>Files uploaded</span><span>{result.photos}</span></div>
               <div><span>Fee paid</span><span>${FEE}.00</span></div>
             </div>
-            <button className="btn ghost" onClick={() => window.location.reload()}>Start another submission</button>
+            {result.demo && (
+              <p className="intro" style={{ maxWidth: "44ch", margin: "16px auto 0" }}>
+                Demo submission — kept out of the tracker and no email was sent.
+                {result.driveLink && <> The draft letter appears in this <a href={result.driveLink} target="_blank" rel="noreferrer">Drive folder</a> within about a minute.</>}
+              </p>
+            )}
+            <button className="btn ghost" onClick={() => window.location.reload()}>{result.demo ? "Run another demo" : "Start another submission"}</button>
           </div>
         </section>
       </div>

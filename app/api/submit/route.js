@@ -40,13 +40,16 @@ export async function POST(req) {
   try {
     // Month / Inspector reuse existing folders; the client folder is always unique per submission.
     const root = rootFolderId();
-    const monthId = await findOrCreateFolder(drive, monthYear, root);
+    const isDemo = data.demo === true;
+    // Demo submissions live under their own folder and never touch the submissions log.
+    const base = isDemo ? await findOrCreateFolder(drive, "_Demo Submissions", root) : root;
+    const monthId = await findOrCreateFolder(drive, monthYear, base);
     const inspectorId = await findOrCreateFolder(drive, inspector, monthId);
     const { id: folderId, name: clientFolderName } = await createUniqueFolder(drive, clientBase, inspectorId);
     const driveLink = `https://drive.google.com/drive/folders/${folderId}`;
-    const path = `${monthYear} / ${inspector} / ${clientFolderName}`;
+    const path = `${isDemo ? "_Demo Submissions / " : ""}${monthYear} / ${inspector} / ${clientFolderName}`;
 
-    await appendSubmission(drive, root, {
+    if (!isDemo) await appendSubmission(drive, root, {
       submissionId: id, submittedAt,
       inspectorName: (data.inspectorName || "").trim(),
       clientName: (data.clientName || "").trim(),
@@ -55,7 +58,7 @@ export async function POST(req) {
       inspectionDate: date, driveLink, amountPaid,
     });
 
-    return NextResponse.json({ ok: true, submissionId: id, folderId, path, driveLink });
+    return NextResponse.json({ ok: true, submissionId: id, folderId, path, driveLink, demo: isDemo });
   } catch (err) {
     console.error("submit error", err);
     return NextResponse.json({ ok: false, error: err.message || "Drive error" }, { status: 500 });
