@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { SINGLE, MULTI, PHOTO_SLOTS, compress, FEE } from "../lib/formConfig";
+import { DEMO_REPORT, isDemoUrl, loadDemoPhoto } from "../lib/demoData";
 
 export function useSubmissionForm() {
   const [f, setF] = useState({
@@ -35,6 +36,26 @@ export function useSubmissionForm() {
     if (one) setSketch([{ file: one, url: URL.createObjectURL(one) }]);
   };
 
+  // Demo mode (?demo=1): one tap fills every field and all photo slots.
+  const [demo, setDemo] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+  useEffect(() => { setDemo(isDemoUrl()); }, []);
+  async function fillDemo() {
+    setDemoLoading(true);
+    try {
+      setF((s) => ({ ...s, ...DEMO_REPORT }));
+      setInvalid({});
+      const [sk, ...slotPhotos] = await Promise.all([
+        loadDemoPhoto("sketch"),
+        ...PHOTO_SLOTS.map((slot) => loadDemoPhoto(slot.id)),
+      ]);
+      setSketch([sk]);
+      setPhotos(Object.fromEntries(PHOTO_SLOTS.map((slot, i) => [slot.id, [slotPhotos[i]]])));
+    } catch (err) {
+      alert("Couldn't load sample photos: " + err.message);
+    } finally { setDemoLoading(false); }
+  }
+
   const [invalid, setInvalid] = useState({});
   function validate(fields) {
     const bad = {};
@@ -62,7 +83,7 @@ export function useSubmissionForm() {
     setBusy(true); setProgress(0);
     try {
       const sres = await fetch("/api/submit", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f),
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...f, demo }),
       }).then((r) => r.json());
       if (!sres.ok) throw new Error(sres.error || "Submit failed");
 
@@ -93,7 +114,7 @@ export function useSubmissionForm() {
       }
 
       // Best-effort payment receipt email — same fire-and-forget pattern.
-      if (f.sendReportTo) {
+      if (f.sendReportTo && !demo) {
         fetch("/api/receipts/send", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -104,7 +125,7 @@ export function useSubmissionForm() {
         }).catch(() => {});
       }
 
-      setResult({ id: sres.submissionId, simulated: !!sres.simulated, path: sres.path, clientName: f.clientName, propertyAddress: f.propertyAddress, photos: queue.length });
+      setResult({ id: sres.submissionId, simulated: !!sres.simulated, path: sres.path, demo, driveLink: sres.driveLink, clientName: f.clientName, propertyAddress: f.propertyAddress, photos: queue.length });
       return true;
     } catch (err) {
       alert("Something went wrong: " + err.message);
@@ -113,5 +134,5 @@ export function useSubmissionForm() {
   }
 
   return { f, set, setVal, toggle, companies, sketch, addSketch, setSketch, photos, addTo, removeFrom,
-    invalid, validate, totalPhotos, busy, progress, result, payAndSubmit };
+    invalid, validate, totalPhotos, busy, progress, result, payAndSubmit, demo, demoLoading, fillDemo };
 }
