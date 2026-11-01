@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireUser } from "../../../../lib/supabase/server";
 import { getDrive, rootFolderId, readCompanies, readSubmissions, findOrCreateFolder, createGoogleDocFromHtml } from "../../../../lib/drive";
 import { buildStatementHtml } from "../../../../lib/statementTemplate";
 
@@ -15,6 +16,8 @@ function monthLabel(monthYear) {
 }
 
 export async function POST(req) {
+  const auth = await requireUser(["admin"]);
+  if (auth.error) return auth.error;
   let data;
   try { data = await req.json(); }
   catch { return NextResponse.json({ ok: false, error: "Bad request" }, { status: 400 }); }

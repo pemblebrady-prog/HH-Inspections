@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { requireUser } from "../../../lib/supabase/server";
 import { getDrive, rootFolderId, readSubmissions } from "../../../lib/drive";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic"; // always re-fetch from Drive; never cache this response
 
 export async function GET() {
+  const auth = await requireUser(["admin"]);
+  if (auth.error) return auth.error;
   const drive = getDrive();
   if (!drive) {
     return NextResponse.json({ ok: true, records: [], simulated: true });

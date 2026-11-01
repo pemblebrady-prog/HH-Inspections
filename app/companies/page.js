@@ -95,7 +95,7 @@ export default function Companies() {
     <>
       <header><div className="bar">
         <a className="brand" href="/"><b>House&nbsp;<span>&amp;</span>&nbsp;Home</b><span className="sub">Inspector Companies</span></a>
-        <div className="who"><a className="viewswitch" href="/tracker">View tracker</a></div>
+        <div className="who"><a className="viewswitch" href="/tracker">View tracker</a><a className="viewswitch" href="/">Portal</a><form action="/auth/signout" method="post" style={{ display: "inline" }}><button className="viewswitch" type="submit">Sign out</button></form></div>
       </div></header>
 
       <div className="shell" style={{ maxWidth: 720 }}>

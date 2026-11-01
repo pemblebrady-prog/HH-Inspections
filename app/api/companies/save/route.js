@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
+import { requireUser } from "../../../../lib/supabase/server";
 import { getDrive, rootFolderId, uploadCompanyLogo, addOrUpdateCompany } from "../../../../lib/drive";
 
 export const runtime = "nodejs";
 
 export async function POST(req) {
+  const auth = await requireUser(["admin"]);
+  if (auth.error) return auth.error;
   const form = await req.formData();
   const name = (form.get("name") || "").toString().trim();
   const phone = (form.get("phone") || "").toString().trim();

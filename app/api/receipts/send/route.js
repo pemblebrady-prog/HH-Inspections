@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { requireUser } from "../../../../lib/supabase/server";
 import { sendEmail } from "../../../../lib/email";
 import { buildReceiptEmailHtml } from "../../../../lib/emailTemplates";
 
 export const runtime = "nodejs";
 
 export async function POST(req) {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
   let data;
   try { data = await req.json(); }
   catch { return NextResponse.json({ ok: false, error: "Bad request" }, { status: 400 }); }

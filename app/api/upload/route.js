@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
+import { requireUser } from "../../../lib/supabase/server";
 import { getDrive, uploadPhoto } from "../../../lib/drive";
 
 export const runtime = "nodejs";
 
 export async function POST(req) {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
   const form = await req.formData();
   const folderId = form.get("folderId");
   const file = form.get("file");

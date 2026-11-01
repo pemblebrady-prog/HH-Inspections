@@ -160,3 +160,9 @@ table.track a:hover{text-decoration:underline}
 .demobar .mono{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.06em;text-transform:uppercase;opacity:.85}
 .demobar .btn{margin:0;padding:8px 14px;font-size:14px}
 @media (max-width:719px){.demobar{right:12px;left:12px;bottom:84px;justify-content:space-between}}
+
+/* Signed-in user menu */
+.usermenu{display:inline-flex;align-items:center;gap:10px;margin-left:10px}
+.who-name{font-size:13px;opacity:.85;max-width:16ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who .viewswitch + .viewswitch, .who form .viewswitch{margin-left:8px}
+@media (max-width:719px){.who-name{display:none}}

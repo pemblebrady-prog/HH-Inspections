@@ -3,10 +3,11 @@ import { useState, useEffect } from "react";
 import { SINGLE, MULTI, PHOTO_SLOTS, compress, FEE } from "../lib/formConfig";
 import { DEMO_REPORT, isDemoUrl, loadDemoPhoto } from "../lib/demoData";
 
-export function useSubmissionForm() {
+export function useSubmissionForm(profile) {
+  const myCompany = profile && profile.company && !profile.company.is_internal ? profile.company.name : "";
   const [f, setF] = useState({
-    date: "", inspectionCompany: "", propertyAddress: "",
-    inspectorName: "", clientName: "", sendReportTo: "", ageOfHome: "", lengthFt: "", widthFt: "",
+    date: "", inspectionCompany: myCompany, propertyAddress: "",
+    inspectorName: (profile && profile.full_name) || "", clientName: "", sendReportTo: "", ageOfHome: "", lengthFt: "", widthFt: "",
     ...Object.fromEntries(SINGLE.map((s) => [s.id, ""])),
     ...Object.fromEntries(MULTI.map((m) => [m.id, []])),
     generalComments: "",
@@ -83,7 +84,7 @@ export function useSubmissionForm() {
     setBusy(true); setProgress(0);
     try {
       const sres = await fetch("/api/submit", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...f, demo }),
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...Object.fromEntries(Object.entries(f).filter(([k]) => !["cardname", "cardnum", "exp", "cvc"].includes(k))), demo, photoCount: totalPhotos() }),
       }).then((r) => r.json());
       if (!sres.ok) throw new Error(sres.error || "Submit failed");
 
@@ -134,5 +135,5 @@ export function useSubmissionForm() {
   }
 
   return { f, set, setVal, toggle, companies, sketch, addSketch, setSketch, photos, addTo, removeFrom,
-    invalid, validate, totalPhotos, busy, progress, result, payAndSubmit, demo, demoLoading, fillDemo };
+    invalid, validate, totalPhotos, busy, progress, result, payAndSubmit, demo, demoLoading, fillDemo, profile };
 }

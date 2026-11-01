@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { requireUser } from "../../../../lib/supabase/server";
 import { getDrive, rootFolderId, readCompanies, fileToDataUri, createGoogleDocFromHtml } from "../../../../lib/drive";
 import { buildLetterHtml } from "../../../../lib/letterTemplate";
 
 export const runtime = "nodejs";
 
 export async function POST(req) {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
   let data;
   try { data = await req.json(); }
   catch { return NextResponse.json({ ok: false, error: "Bad request" }, { status: 400 }); }

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { SINGLE, MULTI, PHOTO_SLOTS, FEE } from "../lib/formConfig";
 import PhotoSlot from "./PhotoSlot";
+import UserMenu from "./UserMenu";
 
 export default function DesktopForm({ form, onSwitchView, switchLabel }) {
   const { f, set, toggle, invalid, validate, companies, sketch, addSketch, setSketch, photos, addTo, removeFrom, totalPhotos, busy, progress, payAndSubmit } = form;
@@ -14,7 +15,7 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
       <div className="demo">Live prototype — payment is stubbed (always passes) · files save to Google Drive when configured</div>
       <header><div className="bar">
         <a className="brand" href="#"><b>House&nbsp;<span>&amp;</span>&nbsp;Home</b><span className="sub">Inspector Portal</span></a>
-        <div className="who">{onSwitchView && <button className="viewswitch" onClick={onSwitchView}>{switchLabel}</button>}</div>
+        <div className="who">{onSwitchView && <button className="viewswitch" onClick={onSwitchView}>{switchLabel}</button>}<UserMenu profile={form.profile} /></div>
       </div></header>
 
       <div className="shell">
