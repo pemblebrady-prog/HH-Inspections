@@ -7,7 +7,7 @@ export default function UserMenu({ profile, links }) {
   return (
     <span className="usermenu">
       {links}
-      {profile.role === "admin" && <a className="viewswitch" href="/tracker">Tracker</a>}
+      {profile.role === "admin" && <><a className="viewswitch" href="/tracker">Tracker</a><a className="viewswitch" href="/admin/people">People</a></>}
       <span className="who-name" title={profile.email}>{name}</span>
       <form action="/auth/signout" method="post" style={{ display: "inline" }}>
         <button className="viewswitch" type="submit">Sign out</button>

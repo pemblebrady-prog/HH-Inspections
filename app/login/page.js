@@ -18,6 +18,10 @@ export default function Login() {
   const [note, setNote] = useState("");
   const codeRef = useRef(null);
   useEffect(() => { if (step === "code") codeRef.current?.focus(); }, [step]);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("error") === "link")
+      setErr("That sign-in link expired or was opened in a different browser. Send a new one.");
+  }, []);
 
   async function sendCode(e) {
     e?.preventDefault();
@@ -26,7 +30,10 @@ export default function Login() {
     setBusy(true); setErr(""); setNote("");
     const { error } = await createClient().auth.signInWithOtp({
       email: addr,
-      options: { shouldCreateUser: false }, // invite-only: unknown emails can't sign up
+      options: {
+        shouldCreateUser: false, // invite-only: unknown emails can't sign up
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext())}`,
+      },
     });
     setBusy(false);
     if (error) {
@@ -36,7 +43,7 @@ export default function Login() {
       else setErr("Couldn't send the code: " + msg);
       return;
     }
-    setEmail(addr); setStep("code"); setNote(`We emailed a 6-digit code to ${addr}.`);
+    setEmail(addr); setStep("code"); setNote(`We emailed a sign-in code to ${addr}. If the email has a link instead, just tap it on this device.`);
   }
 
   async function verify(e) {

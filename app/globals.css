@@ -166,3 +166,9 @@ table.track a:hover{text-decoration:underline}
 .who-name{font-size:13px;opacity:.85;max-width:16ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .who .viewswitch + .viewswitch, .who form .viewswitch{margin-left:8px}
 @media (max-width:719px){.who-name{display:none}}
+
+/* People page */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+@media (max-width:719px){.grid2{grid-template-columns:1fr}}
+.ok-msg{color:var(--ok);font-size:.9rem;margin:6px 0 12px}
+.track select{padding:4px 6px;font-size:13px}
