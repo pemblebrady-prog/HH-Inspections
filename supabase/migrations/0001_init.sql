@@ -1,5 +1,5 @@
--- House & Home Inspector Portal — initial database setup
--- Paste this whole file into Supabase → SQL Editor → New query → Run.
+-- House & Home Inspector Portal - initial database setup
+-- Paste this whole file into Supabase -> SQL Editor -> New query -> Run.
 -- Safe to run once on a fresh project.
 --
 -- Design notes
@@ -11,7 +11,7 @@
 -- * Photos and generated letters stay in Google Drive; the database keeps
 --   the Drive IDs and links.
 
--- ───────────────────────── Types ─────────────────────────
+-- ===== Types =====
 create type public.user_role as enum ('admin', 'company_owner', 'inspector');
 
 create type public.submission_status as enum (
@@ -26,7 +26,7 @@ create type public.submission_status as enum (
 create type public.payment_status as enum ('unpaid', 'processing', 'paid', 'failed', 'refunded', 'waived');
 create type public.payment_method as enum ('ach', 'card', 'isn', 'manual');
 
--- ───────────────────────── Companies ─────────────────────────
+-- ===== Companies =====
 create table public.companies (
   id                  uuid primary key default gen_random_uuid(),
   name                text not null unique,
@@ -46,7 +46,7 @@ create table public.companies (
   updated_at          timestamptz not null default now()
 );
 
--- ───────────────────────── People ─────────────────────────
+-- ===== People =====
 -- One row per signed-in user (created automatically when someone is invited).
 create table public.profiles (
   id          uuid primary key references auth.users (id) on delete cascade,
@@ -61,7 +61,7 @@ create table public.profiles (
 );
 create index profiles_company_idx on public.profiles (company_id);
 
--- ───────────────────────── Submissions ─────────────────────────
+-- ===== Submissions =====
 create sequence public.submission_ref_seq start 1001;
 
 create table public.submissions (
@@ -100,7 +100,7 @@ create index submissions_company_idx   on public.submissions (company_id, submit
 create index submissions_inspector_idx on public.submissions (inspector_id, submitted_at desc);
 create index submissions_status_idx    on public.submissions (status);
 
--- ───────────────────────── Payments ─────────────────────────
+-- ===== Payments =====
 create table public.payments (
   id                        uuid primary key default gen_random_uuid(),
   submission_id             uuid references public.submissions (id) on delete set null,
@@ -115,7 +115,7 @@ create table public.payments (
 );
 create index payments_company_idx on public.payments (company_id, created_at desc);
 
--- ───────────────────────── Keep updated_at current ─────────────────────────
+-- ===== Keep updated_at current =====
 create or replace function public.touch_updated_at()
 returns trigger language plpgsql as $$
 begin
@@ -128,7 +128,7 @@ create trigger profiles_touch    before update on public.profiles    for each ro
 create trigger submissions_touch before update on public.submissions for each row execute function public.touch_updated_at();
 create trigger payments_touch    before update on public.payments    for each row execute function public.touch_updated_at();
 
--- ───────────────────────── New user → profile ─────────────────────────
+-- ===== New user -> profile =====
 -- Every new sign-in account gets a plain 'inspector' profile with no company.
 -- The portal's server (secret key) then sets the real role and company when it
 -- sends the invite. Nothing a user types can make themselves an admin.
@@ -145,7 +145,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- ───────────────────────── Helpers for access rules ─────────────────────────
+-- ===== Helpers for access rules =====
 create or replace function public.current_role_name()
 returns public.user_role language sql stable security definer set search_path = '' as $$
   select role from public.profiles where id = auth.uid() and active
@@ -177,7 +177,7 @@ end $$;
 create trigger profiles_guard before update on public.profiles
   for each row execute function public.guard_profile_changes();
 
--- ───────────────────────── Row-level security ─────────────────────────
+-- ===== Row-level security =====
 alter table public.companies   enable row level security;
 alter table public.profiles    enable row level security;
 alter table public.submissions enable row level security;
@@ -214,7 +214,7 @@ create policy payments_read on public.payments for select to authenticated
     or (public.current_role_name() = 'company_owner' and company_id = public.current_company_id())
   );
 
--- ───────────────────────── Monthly statement view ─────────────────────────
+-- ===== Monthly statement view =====
 -- One row per company per month: activity count, amount, what was paid.
 create or replace view public.monthly_activity
 with (security_invoker = true) as
@@ -229,7 +229,7 @@ from public.submissions s
 where not s.is_demo and s.status <> 'canceled'
 group by 1, 2;
 
--- ───────────────────────── Starting data ─────────────────────────
+-- ===== Starting data =====
 insert into public.companies (name, phone, email, is_internal, price_cents)
 values ('House and Home AZ Inspection Service', '520-245-7897', 'houseandhomeengineering@gmail.com', true, 0)
 on conflict (name) do nothing;
