@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../../lib/supabase/server";
 import { generateLetter } from "../../../../lib/letters";
 import { chargeSubmission } from "../../../../lib/charges";
+import { deliverFinalLetter } from "../../../../lib/delivery";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -24,7 +25,7 @@ export async function PATCH(req) {
   let b;
   try { b = await req.json(); } catch { return NextResponse.json({ ok: false, error: "Bad request" }, { status: 400 }); }
 
-  const { data: sub, error } = await db.from("submissions").select("*, company:companies(name, is_internal)").eq("ref", b.ref).maybeSingle();
+  const { data: sub, error } = await db.from("submissions").select("*, company:companies(name, is_internal, phone, email)").eq("ref", b.ref).maybeSingle();
   if (error || !sub) return NextResponse.json({ ok: false, error: "Job not found" }, { status: 404 });
   const me = auth.profile && auth.profile.id;
   const now = new Date().toISOString();
@@ -37,6 +38,12 @@ export async function PATCH(req) {
       if (b.action === "certify") { patch.certified_at = now; patch.reviewed_by = sub.reviewed_by || me; }
       if (b.action === "deliver") patch.delivered_at = now;
       if (b.action === "reopen") { patch.certified_at = null; patch.delivered_at = null; }
+    } else if (b.action === "send") {
+      const r = await deliverFinalLetter(db, sub, { recipients: b.recipients, force: Boolean(b.force), sentBy: me });
+      if (r.needsConfirm) return NextResponse.json({ ok: false, needsConfirm: true, problems: r.problems });
+      if (!r.ok) return NextResponse.json({ ok: false, error: "Couldn't send to anyone: " + r.results.map((x) => `${x.to}: ${x.error}`).join("; "), results: r.results }, { status: 400 });
+      const { data: fresh } = await db.from("submissions").select("*").eq("id", sub.id).single();
+      return NextResponse.json({ ok: true, submission: fresh, results: r.results, pdfLink: r.pdfLink });
     } else if (b.action === "waive") {
       patch = { payment_status: "waived", ...(sub.status === "on_hold" ? { status: "submitted" } : {}) };
     } else if (b.action === "charge") {
