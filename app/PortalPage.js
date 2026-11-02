@@ -4,6 +4,7 @@ import { useSubmissionForm } from "./useSubmissionForm";
 import DesktopForm from "./DesktopForm";
 import MobileWizard from "./MobileWizard";
 import AppHeader from "./AppHeader";
+import UploadStatus from "./UploadStatus";
 import { FEE } from "../lib/formConfig";
 
 export default function PortalPage({ profile }) {
@@ -23,13 +24,37 @@ export default function PortalPage({ profile }) {
   const isMobile = manual !== null ? manual : autoMobile;
 
   if (form.result) return <Success result={form.result} profile={profile} />;
+  if (form.resuming) return <Resuming form={form} profile={profile} />;
 
   return (
     <>
       {form.demo && <DemoBar form={form} />}
+      {form.restoredAt && !form.busy && (
+        <div className="restored">
+          <span>We restored your unfinished submission (saved {new Date(form.restoredAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}).</span>
+          <button type="button" onClick={() => { if (window.confirm("Clear this submission and its photos and start over?")) form.startOver(); }}>Start over</button>
+        </div>
+      )}
       {isMobile
         ? <MobileWizard form={form} onSwitchView={() => setManual(false)} switchLabel="Desktop view" />
         : <DesktopForm form={form} onSwitchView={() => setManual(true)} switchLabel="Mobile view" />}
+    </>
+  );
+}
+
+function Resuming({ form, profile }) {
+  const r = form.resuming;
+  return (
+    <>
+      <AppHeader title="Inspector Portal" profile={profile} />
+      <div className="shell">
+        <section className="card">
+          <h2>Finishing your submission</h2>
+          <p className="intro">{r.address || r.client || "Your last submission"} wasn't fully sent yet. Keep this screen open while it finishes.</p>
+          <div className="progress"><div style={{ width: form.progress + "%" }} /></div>
+          <UploadStatus form={form} />
+        </section>
+      </div>
     </>
   );
 }
@@ -63,7 +88,13 @@ function Success({ result, profile }) {
               <div><span>Client</span><span>{result.clientName}</span></div>
               <div><span>Property</span><span>{result.propertyAddress}</span></div>
               <div><span>Files uploaded</span><span>{result.photos}</span></div>
+              {result.payment && result.payment !== "waived" && <div><span>Payment</span><span>{{ paid: "Paid", processing: "Processing (bank transfer)", failed: "Failed", unpaid: "Not charged yet" }[result.payment] || result.payment}</span></div>}
                           </div>
+            {result.onHold && (
+              <p className="err" style={{ maxWidth: "44ch", margin: "16px auto 0" }}>
+                This job is <b>on hold</b> because your company's payment didn't go through. Your company owner has been emailed to update the payment method.
+              </p>
+            )}
             {result.demo && (
               <p className="intro" style={{ maxWidth: "44ch", margin: "16px auto 0" }}>
                 Demo submission — kept out of the tracker and no email was sent.

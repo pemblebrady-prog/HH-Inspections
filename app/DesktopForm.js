@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, FEE } from "../lib/formConfig";
 import PhotoSlot from "./PhotoSlot";
 import AppHeader from "./AppHeader";
+import UploadStatus from "./UploadStatus";
 
 export default function DesktopForm({ form, onSwitchView, switchLabel }) {
   const { f, set, toggle, invalid, validate, companies, sketch, addSketch, setSketch, photos, addTo, removeFrom, totalPhotos, busy, progress, payAndSubmit } = form;
@@ -146,6 +147,7 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
               </div>
             )}
             {busy && <div className="progress"><div style={{ width: progress + "%" }} /></div>}
+            <UploadStatus form={form} />
             <div className="actions">
               <button className="btn ghost" onClick={() => setStep(2)} disabled={busy}>← Back</button>
               <button className="btn" onClick={payAndSubmit} disabled={busy}>{busy ? `Uploading… ${progress}%` : "Submit for certification"}</button>

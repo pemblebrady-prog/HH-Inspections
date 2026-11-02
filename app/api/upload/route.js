@@ -25,6 +25,15 @@ export async function POST(req) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const override = form.get("filename");
     const name = (typeof override === "string" && override) || file.name || `photo-${Date.now()}.jpg`;
+    // A retry after a dropped connection may have already landed: reuse it instead of duplicating.
+    const safe = name.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    const found = await drive.files.list({
+      q: `name = '${safe}' and '${String(folderId).replace(/'/g, "")}' in parents and trashed = false`,
+      fields: "files(id, name)", supportsAllDrives: true, includeItemsFromAllDrives: true, pageSize: 1,
+    });
+    if (found.data.files && found.data.files.length) {
+      return NextResponse.json({ ok: true, id: found.data.files[0].id, name: found.data.files[0].name, existing: true });
+    }
     const res = await uploadPhoto(drive, folderId, name, file.type, buffer);
     return NextResponse.json({ ok: true, id: res.id, name: res.name });
   } catch (err) {

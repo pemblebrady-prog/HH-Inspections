@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, FEE } from "../lib/formConfig";
 import PhotoSlot from "./PhotoSlot";
 import AppHeader from "./AppHeader";
+import UploadStatus from "./UploadStatus";
 
 const byId = (id) => SINGLE.find((s) => s.id === id);
 
@@ -98,6 +99,7 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
       <p className="hint" style={{ marginBottom: 14 }}>{totalPhotos()} file{totalPhotos() === 1 ? "" : "s"} ready to upload (incl. sketch).</p>
       {!internal && <div className="lock"><span>Charged to {coName || "your company"}'s payment method on file. Online payment is being set up, so nothing is charged yet.</span></div>}
       {busy && <div className="progress"><div style={{ width: progress + "%" }} /></div>}
+            <UploadStatus form={form} />
     </>),
   };
 

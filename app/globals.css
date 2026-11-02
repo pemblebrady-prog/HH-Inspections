@@ -254,3 +254,13 @@ table.track a:hover{text-decoration:underline}
 .ios-share::after{content:"";position:absolute;left:50%;top:-8px;width:6px;height:6px;border-left:1.6px solid var(--steel);border-top:1.6px solid var(--steel);transform:translateX(-50%) rotate(45deg)}
 /* keep the mobile wizard's bottom buttons clear of the sheet */
 body:has(.wiz-nav) .install-sheet{bottom:calc(84px + env(safe-area-inset-bottom))}
+
+/* Upload status / restored draft */
+.up-status{font-size:14px;line-height:1.45;margin:8px 0 4px;color:var(--ink)}
+.up-status.wait{background:#f9eeda;border:1px solid #e5cf9c;border-radius:6px;padding:10px 12px}
+.up-status.warn{background:#fbebeb;border:1px solid #e7b9b2;border-radius:6px;padding:10px 12px}
+.up-status .btn{margin:8px 0 0}
+.restored{max-width:820px;margin:10px auto 0;padding:9px 14px;background:#e7f1fb;border:1px solid #bcd7ec;border-radius:6px;
+  font-size:14px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.restored button{background:none;border:0;color:var(--steel);text-decoration:underline;cursor:pointer;font:inherit;padding:0}
+@media (max-width:719px){.restored{margin:8px 12px 0}}
