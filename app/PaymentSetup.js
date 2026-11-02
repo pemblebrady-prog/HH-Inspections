@@ -23,6 +23,7 @@ async function api(url, body) {
 export default function PaymentSetup({ companyId, onSaved, onState }) {
   const [billing, setBilling] = useState(null);
   const [stripeReady, setStripeReady] = useState(true);
+  const [verifyUrl, setVerifyUrl] = useState(null);
   const [open, setOpen] = useState(false);
   const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -34,7 +35,7 @@ export default function PaymentSetup({ companyId, onSaved, onState }) {
 
   async function refresh() {
     const d = await api("/api/billing" + q);
-    if (d.ok) { setBilling(d.billing); setStripeReady(d.stripeReady); } else setErr(d.error || "Couldn't load billing");
+    if (d.ok) { setBilling(d.billing); setStripeReady(d.stripeReady); setVerifyUrl(d.verifyUrl || null); } else setErr(d.error || "Couldn't load billing");
   }
   useEffect(() => { if (onState) onState({ ready: Boolean(billing && billing.ready), open, internal: Boolean(billing && billing.internal) }); }, [billing, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -101,7 +102,7 @@ export default function PaymentSetup({ companyId, onSaved, onState }) {
     if (!d.ok) { setErr(d.error || "Couldn't save"); return; }
     setBilling(d.billing); setOpen(false); setAgree(false);
     if (d.saved) { setMsg(`Saved ${d.method}. Future jobs will be charged automatically.`); if (onSaved) onSaved(d.billing); }
-    else if (d.verifyUrl) setMsg("Stripe sent two small deposits to verify this account. When they arrive (1–2 business days), confirm them using the link in Stripe's email.");
+    else if (d.verifyUrl) { setVerifyUrl(d.verifyUrl); setMsg("Stripe will send two small deposits to verify this account (1–2 business days). When they arrive, tap \"Verify bank account\" and enter the amounts. Or choose a bank login or card instead for instant setup."); }
     else setMsg(d.error || "Your bank is still setting up the account.");
   }
 
@@ -117,6 +118,7 @@ export default function PaymentSetup({ companyId, onSaved, onState }) {
           <b>{billing.method || "None yet"}</b>
           {billing.method && <span className="hint"> · {billing.ready ? (billing.type === "ach" ? "Bank account (ACH)" : "Card") : "Not ready"}</span>}
           {billing.note && <p className="hint" style={{ margin: "4px 0 0" }}>{billing.note}</p>}
+          {verifyUrl && <p style={{ margin: "8px 0 0" }}><a className="btn ghost" href={verifyUrl} target="_blank" rel="noreferrer">Verify bank account</a> <a href="#" className="hint" onClick={(e) => { e.preventDefault(); refresh(); }}>I've verified it, refresh</a></p>}
         </div>
         {!open && stripeReady && <button type="button" className="btn ghost" onClick={start} disabled={busy}>{busy ? "Loading…" : billing.method ? "Change" : "Add payment method"}</button>}
       </div>
