@@ -1,6 +1,5 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { createClient } from "../../lib/supabase/browser";
 
 // Only allow redirects back into this site.
 function safeNext() {
@@ -23,23 +22,28 @@ export default function Login() {
       setErr("That sign-in link expired or was opened in a different browser. Send a new one.");
   }, []);
 
+  async function post(url, body, ms) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    try {
+      const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: ctrl.signal });
+      return await r.json().catch(() => ({ ok: false, error: `Server error (${r.status})` }));
+    } catch (e) {
+      return { ok: false, error: e.name === "AbortError" ? "The server took too long to respond." : String(e.message || e) };
+    } finally { clearTimeout(t); }
+  }
+
   async function sendCode(e) {
     e?.preventDefault();
     const addr = email.trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(addr)) { setErr("Enter a valid email address."); return; }
     setBusy(true); setErr(""); setNote("");
-    const { error } = await createClient().auth.signInWithOtp({
-      email: addr,
-      options: {
-        shouldCreateUser: false, // invite-only: unknown emails can't sign up
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext())}`,
-      },
-    });
+    const d = await post("/api/auth/send-code", { email: addr, next: safeNext() }, 35000);
     setBusy(false);
-    if (error) {
-      const msg = String(error.message || "");
-      if (/signup|not allowed|not found/i.test(msg)) setErr("This email isn't set up for the portal yet. Ask House & Home to add you.");
-      else if (/rate|too many|seconds/i.test(msg)) setErr("Too many attempts. Wait a minute and try again.");
+    if (!d.ok) {
+      const msg = String(d.error || "");
+      if (/signup|not allowed|otp_disabled|not found/i.test(msg + (d.code || ""))) setErr("This email isn't set up for the portal yet. Ask House & Home to add you.");
+      else if (/rate|too many|seconds/i.test(msg)) setErr("Too many attempts. Wait a few minutes and try again. (" + msg + ")");
       else setErr("Couldn't send the code: " + msg);
       return;
     }
@@ -51,8 +55,8 @@ export default function Login() {
     const token = code.replace(/\D/g, "");
     if (token.length < 6) { setErr("Enter the 6-digit code from the email."); return; }
     setBusy(true); setErr("");
-    const { error } = await createClient().auth.verifyOtp({ email, token, type: "email" });
-    if (error) { setBusy(false); setErr("That code didn't work. Check it, or send a new one."); return; }
+    const d = await post("/api/auth/verify-code", { email, token }, 25000);
+    if (!d.ok) { setBusy(false); setErr("That code didn't work: " + (d.error || "check it, or send a new one.")); return; }
     window.location.replace(safeNext());
   }
 
