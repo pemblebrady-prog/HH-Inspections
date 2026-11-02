@@ -20,7 +20,7 @@ async function api(url, body) {
 }
 
 // Save a business bank account (ACH, preferred) or a card for automatic per-job charges.
-export default function PaymentSetup({ companyId, onSaved }) {
+export default function PaymentSetup({ companyId, onSaved, onState }) {
   const [billing, setBilling] = useState(null);
   const [stripeReady, setStripeReady] = useState(true);
   const [open, setOpen] = useState(false);
@@ -36,6 +36,7 @@ export default function PaymentSetup({ companyId, onSaved }) {
     const d = await api("/api/billing" + q);
     if (d.ok) { setBilling(d.billing); setStripeReady(d.stripeReady); } else setErr(d.error || "Couldn't load billing");
   }
+  useEffect(() => { if (onState) onState({ ready: Boolean(billing && billing.ready), open, internal: Boolean(billing && billing.internal) }); }, [billing, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     refresh();

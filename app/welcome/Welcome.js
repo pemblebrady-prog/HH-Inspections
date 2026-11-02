@@ -69,6 +69,11 @@ export default function Welcome({ profile }) {
     setLogo(small); setPreview(URL.createObjectURL(small));
   }
 
+  const [pay, setPay] = useState({ ready: false, open: false, internal: false });
+  function continueFromPayment() {
+    if (pay.open && !window.confirm("Your payment method isn't saved yet. Tap \"Save payment method\" in the form first, or continue without saving?")) return;
+    next();
+  }
   const isLast = i === steps.length - 1;
   const field = (id, label, value, onChange, opts = {}) => (
     <div className="field">
@@ -144,7 +149,7 @@ export default function Welcome({ profile }) {
               Each certification is ${((company.price_cents || 13500) / 100).toFixed(0)}, charged automatically when your inspector submits.
               We'll connect your <b>business bank account (ACH)</b>, or a card if you prefer.
             </p>
-            <PaymentSetup />
+            <PaymentSetup onState={setPay} />
             <p className="hint" style={{ marginTop: 12 }}>You can also do this later from the menu under <b>Billing</b>. Jobs can't be charged until a payment method is saved.</p>
           </>)}
 
@@ -165,7 +170,7 @@ export default function Welcome({ profile }) {
             {i > 0 && <button className="btn ghost" type="button" onClick={() => setI(i - 1)} disabled={busy}>Back</button>}
             {isLast
               ? <button className="btn" type="button" onClick={finish} disabled={busy}>{busy ? "Finishing…" : owner ? "Finish setup" : "Start my first submission"}</button>
-              : <button className="btn" type="button" onClick={step === "payment" || step === "team" ? next : saveAndNext} disabled={busy}>{busy ? "Saving…" : step === "team" || step === "payment" ? "Continue" : "Save & continue"}</button>}
+              : <button className="btn" type="button" onClick={step === "payment" ? continueFromPayment : step === "team" ? next : saveAndNext} disabled={busy}>{busy ? "Saving…" : step === "payment" ? (pay.ready || pay.internal ? "Continue" : "Skip for now") : step === "team" ? "Continue" : "Save & continue"}</button>}
           </div>
         </section>
       </div>
