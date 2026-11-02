@@ -4,7 +4,7 @@ import { normalizeLogo } from "../../lib/formConfig";
 import AppHeader from "../AppHeader";
 
 function logoUrl(fileId) {
-  return fileId ? `https://drive.google.com/uc?export=view&id=${fileId}` : null;
+  return fileId ? `/api/logo?id=${encodeURIComponent(fileId)}` : null; // served by the portal
 }
 
 const BLANK = { name: "", phone: "", email: "", billingContact: "", billingAddress: "", billingCity: "", billingState: "AZ", billingZip: "" };

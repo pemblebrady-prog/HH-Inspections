@@ -12,6 +12,7 @@ export function homeFor(profile) {
 function navFor(profile, minimal) {
   if (minimal || !profile) return [];
   const submit = { href: "/", label: "Submit a job" };
+  const jobs = { href: "/jobs", label: "My jobs" };
   if (profile.role === "admin") return [
     { href: "/admin/review", label: "Review queue" },
     submit,
@@ -19,8 +20,8 @@ function navFor(profile, minimal) {
     { href: "/companies", label: "Companies" },
     { href: "/tracker", label: "Old tracker" },
   ];
-  if (profile.role === "company_owner") return [submit, { href: "/team", label: "My team" }, { href: "/billing", label: "Billing" }];
-  return [submit];
+  if (profile.role === "company_owner") return [submit, { ...jobs, label: "Company jobs" }, { href: "/team", label: "My team" }, { href: "/billing", label: "Billing" }];
+  return [submit, jobs];
 }
 
 // Shared top bar: ☰ menu, logo (to your home screen), and your profile button.

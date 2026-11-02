@@ -101,7 +101,10 @@ function Success({ result, profile }) {
                 {result.driveLink && <> The draft letter appears in this <a href={result.driveLink} target="_blank" rel="noreferrer">Drive folder</a> within about a minute.</>}
               </p>
             )}
-            <button className="btn ghost" onClick={() => window.location.reload()}>{result.demo ? "Run another demo" : "Start another submission"}</button>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+              <button className="btn ghost" onClick={() => window.location.reload()}>{result.demo ? "Run another demo" : "Start another submission"}</button>
+              {profile && profile.role !== "admin" && !result.demo && <a className="btn ghost" href="/jobs">View my jobs</a>}
+            </div>
           </div>
         </section>
       </div>
