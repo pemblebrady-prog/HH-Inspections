@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../../lib/supabase/server";
-import { sendEmail } from "../../../../lib/email";
+import { invitePerson } from "../../../../lib/invite";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const ROLES = ["admin", "company_owner", "inspector"];
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-
-function esc(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
 
 async function listAll(db) {
   const [{ data: people, error: e1 }, { data: companies, error: e2 }] = await Promise.all([
@@ -66,33 +62,13 @@ export async function POST(req) {
       return NextResponse.json({ ok: false, error: "Pick a company for inspectors and company owners." }, { status: 400 });
     }
 
-    // Create the sign-in account (no email from Supabase; we send our own welcome below).
-    const { data: created, error: createErr } = await db.auth.admin.createUser({ email, email_confirm: true });
-    if (createErr) {
-      const msg = /already|registered|exists/i.test(createErr.message || "") ? "That email already has an account." : createErr.message;
-      return NextResponse.json({ ok: false, error: msg }, { status: 400 });
-    }
-
-    // The database trigger made a plain profile; set the real role/company.
-    const { error: upErr } = await db.from("profiles")
-      .upsert({ id: created.user.id, email, full_name: fullName || null, role, company_id: companyId });
-    if (upErr) throw upErr;
-
-    // Welcome email (best effort).
-    let emailed = false;
-    try {
-      const origin = new URL(req.url).origin;
-      const r = await sendEmail({
-        to: email,
-        subject: "You've been added to the House & Home Inspector Portal",
-        html: `<p>Hi${fullName ? " " + esc(fullName.split(" ")[0]) : ""},</p>
-          <p>You now have access to the House &amp; Home Inspector Portal.</p>
-          <p><a href="${origin}/login">Sign in here</a> with this email address (${esc(email)}). We'll email you a one-time code; no password needed.</p>
-          <p>Tip: on your phone, open the portal in Safari or Chrome and choose <b>Add to Home Screen</b> so it works like an app.</p>`,
-      });
-      emailed = !r.simulated;
-    } catch (e) { console.error("welcome email failed", e); }
-
+    const r = await invitePerson(db, {
+      email, fullName, role, companyId,
+      invitedBy: auth.profile && (auth.profile.full_name || "House & Home"),
+      origin: new URL(req.url).origin,
+    });
+    if (!r.ok) return NextResponse.json({ ok: false, error: r.error }, { status: r.status || 400 });
+    const emailed = r.emailed;
     return NextResponse.json({ ok: true, emailed, ...(await listAll(db)) });
   } catch (err) {
     console.error("invite error", err);

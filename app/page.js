@@ -11,6 +11,8 @@ export default async function Page() {
   if (authEnabled) {
     profile = await getCurrentProfile();
     if (!profile) redirect("/login");
+    // First sign-in: finish setup before submitting (admins skip this).
+    if (profile.role !== "admin" && !profile.onboarded_at) redirect("/welcome");
   }
   return <PortalPage profile={profile} />;
 }

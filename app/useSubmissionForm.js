@@ -7,7 +7,7 @@ export function useSubmissionForm(profile) {
   const myCompany = profile && profile.company && !profile.company.is_internal ? profile.company.name : "";
   const [f, setF] = useState({
     date: "", inspectionCompany: myCompany, propertyAddress: "",
-    inspectorName: (profile && profile.full_name) || "", clientName: "", sendReportTo: "", ageOfHome: "", lengthFt: "", widthFt: "",
+    inspectorName: (profile && profile.full_name) || "", clientName: "", sendReportTo: (profile && profile.default_report_email) || "", ageOfHome: "", lengthFt: "", widthFt: "",
     ...Object.fromEntries(SINGLE.map((s) => [s.id, ""])),
     ...Object.fromEntries(MULTI.map((m) => [m.id, []])),
     generalComments: "",
