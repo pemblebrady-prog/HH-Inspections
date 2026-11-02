@@ -13,7 +13,7 @@ export async function POST(req) {
   try { body = await req.json(); } catch { return NextResponse.json({ ok: false, error: "Bad request" }, { status: 400 }); }
   const email = String(body.email || "").trim().toLowerCase();
   const token = String(body.token || "").replace(/\D/g, "");
-  if (!email || token.length < 6) return NextResponse.json({ ok: false, error: "Enter the 6-digit code from the email." }, { status: 400 });
+  if (!email || token.length < 6) return NextResponse.json({ ok: false, error: "Enter the code from the email." }, { status: 400 });
   try {
     const sb = createClient();
     let { error } = await withTimeout(sb.auth.verifyOtp({ email, token, type: "email" }), 20000, "Checking the code");

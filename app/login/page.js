@@ -53,7 +53,7 @@ export default function Login() {
   async function verify(e) {
     e?.preventDefault();
     const token = code.replace(/\D/g, "");
-    if (token.length < 6) { setErr("Enter the 6-digit code from the email."); return; }
+    if (token.length < 6) { setErr("Enter the code from the email."); return; }
     setBusy(true); setErr("");
     const d = await post("/api/auth/verify-code", { email, token }, 25000);
     if (!d.ok) { setBusy(false); setErr("That code didn't work: " + (d.error || "check it, or send a new one.")); return; }
@@ -83,7 +83,7 @@ export default function Login() {
             <form onSubmit={verify}>
               <p className="intro">{note} It can take a minute; check spam if you don't see it.</p>
               <div className={"field" + (err ? " invalid" : "")}>
-                <label htmlFor="code">6-digit code</label>
+                <label htmlFor="code">Sign-in code</label>
                 <input id="code" ref={codeRef} inputMode="numeric" autoComplete="one-time-code" maxLength={10}
                   value={code} onChange={(e) => setCode(e.target.value)} style={{ letterSpacing: "0.3em", fontSize: 22 }} />
                 {err && <div className="err">{err}</div>}
