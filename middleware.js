@@ -39,6 +39,6 @@ export async function middleware(request) {
 }
 
 export const config = {
-  // Everything except Next's static files, the favicon, and the demo sample photos.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|demo/).*)"],
+  // Everything except Next's static files, icons/manifest (phones fetch these signed-out), and demo photos.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|demo/|icons/|manifest.webmanifest|apple-touch-icon).*)"],
 };

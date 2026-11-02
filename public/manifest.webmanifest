@@ -1,0 +1,16 @@
+{
+  "name": "House & Home Inspector Portal",
+  "short_name": "H&H Portal",
+  "description": "Submit manufactured home foundation inspections for engineering certification.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#E7E0D0",
+  "theme_color": "#132430",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

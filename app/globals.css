@@ -237,3 +237,20 @@ table.track a:hover{text-decoration:underline}
 .sidenav form{margin-top:auto;border-top:1px solid var(--line);padding-top:6px}
 .send-box{border:1px solid var(--line);border-radius:6px;padding:12px;background:#fff;display:flex;flex-direction:column;gap:6px}
 .send-box textarea{min-height:64px;font-size:13px}
+
+/* Add-to-home-screen pop-up */
+.install-sheet{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:90;background:var(--paper);
+  border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 32px rgba(0,0,0,.25);padding:16px 16px 10px;max-width:440px;margin:0 auto}
+.install-row{display:flex;gap:12px;align-items:center;margin-bottom:10px;padding-right:22px}
+.install-row img{border-radius:10px;flex:none}
+.install-row b{display:block;font-size:15px;color:var(--ink)}
+.install-row span{font-size:13px;color:var(--muted)}
+.install-steps{font-size:14px;margin:0 0 6px;color:var(--ink);line-height:1.5}
+.install-sheet .btn{width:100%;margin:0 0 4px}
+.install-x{position:absolute;top:6px;right:10px;background:none;border:0;font-size:24px;color:var(--muted);cursor:pointer}
+.install-later{background:none;border:0;color:var(--muted);font-size:13px;width:100%;padding:6px;cursor:pointer}
+.ios-share{display:inline-block;width:12px;height:14px;border:1.6px solid var(--steel);border-top:0;border-radius:0 0 2px 2px;position:relative;margin:0 2px -2px}
+.ios-share::before{content:"";position:absolute;left:50%;top:-7px;width:1.6px;height:11px;background:var(--steel);transform:translateX(-50%)}
+.ios-share::after{content:"";position:absolute;left:50%;top:-8px;width:6px;height:6px;border-left:1.6px solid var(--steel);border-top:1.6px solid var(--steel);transform:translateX(-50%) rotate(45deg)}
+/* keep the mobile wizard's bottom buttons clear of the sheet */
+body:has(.wiz-nav) .install-sheet{bottom:calc(84px + env(safe-area-inset-bottom))}
