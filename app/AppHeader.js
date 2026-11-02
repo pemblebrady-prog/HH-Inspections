@@ -17,6 +17,7 @@ function navFor(profile, minimal) {
     { href: "/admin/review", label: "Review queue" },
     submit,
     { href: "/admin/people", label: "People" },
+    { href: "/admin/statements", label: "Statements" },
     { href: "/companies", label: "Companies" },
     { href: "/tracker", label: "Old tracker" },
   ];

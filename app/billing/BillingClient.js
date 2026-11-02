@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import PaymentSetup from "../PaymentSetup";
+import StatementList from "../StatementList";
 
 const LABEL = { paid: "Paid", processing: "Processing", failed: "Failed", refunded: "Refunded", waived: "Waived", unpaid: "Unpaid" };
 
@@ -14,6 +15,11 @@ export default function BillingClient() {
         <h2>Payment method</h2>
         <p className="intro">Each certification is charged automatically when your inspector submits it. Bank transfers (ACH) take a few business days to clear; the job goes to the engineer right away.</p>
         <PaymentSetup onSaved={load} />
+      </section>
+      <section className="card" style={{ marginTop: 18 }}>
+        <h2>Monthly statements</h2>
+        <p className="intro">A summary of each month's jobs and what was paid. It's not a bill: jobs are charged when they're submitted. A statement is also emailed to you on the 1st of each month.</p>
+        <StatementList />
       </section>
       <section className="card" style={{ marginTop: 18 }}>
         <h2>Recent charges</h2>

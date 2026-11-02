@@ -23,7 +23,7 @@ export async function middleware(request) {
 
   const { data: { user } } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
-  const isPublic = path === "/login" || path.startsWith("/auth/") || path.startsWith("/api/auth/") || path === "/api/health" || path === "/api/stripe/webhook";
+  const isPublic = path === "/login" || path.startsWith("/auth/") || path.startsWith("/api/auth/") || path === "/api/health" || path === "/api/stripe/webhook" || path.startsWith("/api/cron/");
 
   if (!user && !isPublic) {
     if (path.startsWith("/api/")) {

@@ -264,3 +264,14 @@ body:has(.wiz-nav) .install-sheet{bottom:calc(84px + env(safe-area-inset-bottom)
   font-size:14px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .restored button{background:none;border:0;color:var(--steel);text-decoration:underline;cursor:pointer;font:inherit;padding:0}
 @media (max-width:719px){.restored{margin:8px 12px 0}}
+
+/* Statements */
+.month-list{list-style:none;margin:6px 0 0;padding:0}
+.month-list li{display:flex;justify-content:space-between;align-items:center;padding:10px 2px;border-bottom:1px solid #0000000d;font-size:15px}
+.month-list a{color:var(--ink);font-weight:600}
+@media print{
+  .no-print, header, .install-sheet{display:none !important}
+  body{background:#fff !important}
+  .shell{max-width:none !important;padding:0 !important;margin:0 !important}
+  .statement-card{border:0 !important;padding:0 !important;background:#fff !important;box-shadow:none !important}
+}
