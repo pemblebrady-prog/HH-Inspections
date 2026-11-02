@@ -15,7 +15,9 @@ export async function POST(req) {
   const token = String(body.token || "").replace(/\D/g, "");
   if (!email || token.length < 6) return NextResponse.json({ ok: false, error: "Enter the 6-digit code from the email." }, { status: 400 });
   try {
-    const { error } = await withTimeout(createClient().auth.verifyOtp({ email, token, type: "email" }), 20000, "Checking the code");
+    const sb = createClient();
+    let { error } = await withTimeout(sb.auth.verifyOtp({ email, token, type: "email" }), 20000, "Checking the code");
+    if (error) ({ error } = await withTimeout(sb.auth.verifyOtp({ email, token, type: "magiclink" }), 20000, "Checking the code"));
     if (error) return NextResponse.json({ ok: false, error: error.message || "Invalid code" }, { status: 400 });
     return NextResponse.json({ ok: true });
   } catch (err) {

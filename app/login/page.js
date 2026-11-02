@@ -42,7 +42,7 @@ export default function Login() {
     setBusy(false);
     if (!d.ok) {
       const msg = String(d.error || "");
-      if (/signup|not allowed|otp_disabled|not found/i.test(msg + (d.code || ""))) setErr("This email isn't set up for the portal yet. Ask House & Home to add you.");
+      if (d.code === "not_invited" || /signup|not allowed|otp_disabled/i.test(msg)) setErr("This email isn't set up for the portal yet. Ask House & Home to add you.");
       else if (/rate|too many|seconds/i.test(msg)) setErr("Too many attempts. Wait a few minutes and try again. (" + msg + ")");
       else setErr("Couldn't send the code: " + msg);
       return;
