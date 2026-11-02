@@ -29,7 +29,7 @@ export default function PaymentSetup({ companyId, onSaved }) {
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const mountRef = useRef(null);
-  const sRef = useRef({ stripe: null, elements: null });
+  const sRef = useRef({ stripe: null, elements: null, mounted: false });
   const q = companyId ? `?companyId=${encodeURIComponent(companyId)}` : "";
 
   async function refresh() {
@@ -63,15 +63,29 @@ export default function PaymentSetup({ companyId, onSaved }) {
         clientSecret: d.clientSecret,
         appearance: { theme: "stripe", variables: { colorPrimary: "#A2382A", fontFamily: "Inter, system-ui, sans-serif", borderRadius: "4px" } },
       });
-      setOpen(true);
-      setTimeout(() => {
-        const el = elements.create("payment", { layout: "tabs", defaultValues: {} });
-        el.mount(mountRef.current);
-        sRef.current = { stripe, elements };
-        setBusy(false);
-      }, 0);
+      sRef.current = { stripe, elements, mounted: false };
+      setOpen(true); // the effect below mounts the form once the box is on screen
     } catch (e) { setBusy(false); setErr(e.message); }
   }
+
+  // Mount Stripe's form after the box renders; surface load errors instead of a blank box.
+  useEffect(() => {
+    const st = sRef.current;
+    if (!open || !st.elements || st.mounted || !mountRef.current) return;
+    st.mounted = true;
+    const el = st.elements.create("payment", { layout: "tabs" });
+    el.on("ready", () => setBusy(false));
+    el.on("loaderror", (ev) => {
+      setBusy(false);
+      const m = (ev && ev.error && ev.error.message) || "Stripe's form couldn't load.";
+      setErr(/No such setupintent|client_secret/i.test(m)
+        ? "Stripe's form couldn't load: the publishable key and secret key in Vercel look like they're from different Stripe accounts or sandboxes. (" + m + ")"
+        : "Stripe's form couldn't load: " + m);
+    });
+    el.mount(mountRef.current);
+    const t = setTimeout(() => { setBusy((b) => { if (b) setErr("Stripe's form is taking too long to load. Check your connection, or try another browser."); return false; }); }, 20000);
+    return () => clearTimeout(t);
+  }, [open]);
 
   async function save(e) {
     e.preventDefault();
@@ -110,6 +124,7 @@ export default function PaymentSetup({ companyId, onSaved }) {
       {open && (
         <form onSubmit={save} style={{ marginTop: 16 }}>
           <p className="hint">Choose <b>US bank account</b> to connect your business checking account (lower fees, preferred), or <b>Card</b>.</p>
+          {busy && <p className="hint" style={{ margin: "10px 0 0" }}>Loading secure form…</p>}
           <div ref={mountRef} className="stripe-mount" />
           <label className="agree">
             <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
@@ -117,7 +132,7 @@ export default function PaymentSetup({ companyId, onSaved }) {
           </label>
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn" type="submit" disabled={busy}>{busy ? "Saving…" : "Save payment method"}</button>
-            <button className="btn ghost" type="button" disabled={busy} onClick={() => setOpen(false)}>Cancel</button>
+            <button className="btn ghost" type="button" disabled={busy} onClick={() => { setOpen(false); sRef.current = { stripe: null, elements: null, mounted: false }; }}>Cancel</button>
           </div>
         </form>
       )}
