@@ -16,6 +16,7 @@ export default function UserMenu({ profile }) {
         <a href="/">Submit a job</a>
         {profile.role === "company_owner" && <a href="/team">My team</a>}
         {profile.role === "admin" && <>
+          <a href="/admin/review">Review queue</a>
           <a href="/tracker">Tracker</a>
           <a href="/admin/people">People</a>
           <a href="/companies">Companies</a>

@@ -57,15 +57,14 @@ function Success({ result }) {
               <circle cx="60" cy="60" r="54" fill="none" stroke="#3f7a52" strokeWidth="3" /><circle cx="60" cy="60" r="45" fill="none" stroke="#3f7a52" strokeWidth="1.3" />
               <path d="M44 61l11 11 22-24" stroke="#3f7a52" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <h2>Submitted &amp; paid</h2>
+            <h2>Submitted</h2>
             <p className="intro" style={{ maxWidth: "44ch", margin: "12px auto 0" }}>Your report is in the engineer's queue. You will receive the certified letter within the next several business days at the email address provided.</p>
             <div className="receipt">
               <div><span>Submission ID</span><span>{result.id}</span></div>
               <div><span>Client</span><span>{result.clientName}</span></div>
               <div><span>Property</span><span>{result.propertyAddress}</span></div>
               <div><span>Files uploaded</span><span>{result.photos}</span></div>
-              <div><span>Fee paid</span><span>${FEE}.00</span></div>
-            </div>
+                          </div>
             {result.demo && (
               <p className="intro" style={{ maxWidth: "44ch", margin: "16px auto 0" }}>
                 Demo submission — kept out of the tracker and no email was sent.

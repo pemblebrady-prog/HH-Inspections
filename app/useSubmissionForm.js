@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { SINGLE, MULTI, PHOTO_SLOTS, compress, FEE } from "../lib/formConfig";
+import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, compress, FEE } from "../lib/formConfig";
 import { DEMO_REPORT, isDemoUrl, loadDemoPhoto } from "../lib/demoData";
 
 export function useSubmissionForm(profile) {
@@ -10,8 +10,8 @@ export function useSubmissionForm(profile) {
     inspectorName: (profile && profile.full_name) || "", clientName: "", sendReportTo: (profile && profile.default_report_email) || "", ageOfHome: "", lengthFt: "", widthFt: "",
     ...Object.fromEntries(SINGLE.map((s) => [s.id, ""])),
     ...Object.fromEntries(MULTI.map((m) => [m.id, []])),
+    ...Object.fromEntries(DETAILS.map((d) => [d.id, ""])),
     generalComments: "",
-    cardname: "", cardnum: "", exp: "", cvc: "",
   });
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
   const setVal = (k, v) => setF((s) => ({ ...s, [k]: v }));
@@ -64,7 +64,6 @@ export function useSubmissionForm(profile) {
       const v = String(f[k] || "").trim();
       let isBad = !v;
       if (k === "sendReportTo" && v) isBad = !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
-      if (k === "cardnum" && v) isBad = v.replace(/\s/g, "").length < 16;
       if (isBad) bad[k] = true;
     });
     setInvalid((prev) => ({ ...prev, ...bad, ...Object.fromEntries(fields.filter((k) => !bad[k]).map((k) => [k, false])) }));
@@ -80,18 +79,17 @@ export function useSubmissionForm(profile) {
   const [result, setResult] = useState(null);
 
   async function payAndSubmit() {
-    if (!validate(["cardname", "cardnum", "exp", "cvc"])) return false;
     setBusy(true); setProgress(0);
     try {
       const sres = await fetch("/api/submit", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...Object.fromEntries(Object.entries(f).filter(([k]) => !["cardname", "cardnum", "exp", "cvc"].includes(k))), demo, photoCount: totalPhotos() }),
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...f, demo, photoCount: totalPhotos() }),
       }).then((r) => r.json());
       if (!sres.ok) throw new Error(sres.error || "Submit failed");
 
       const queue = [];
-      sketch.forEach((p) => queue.push({ file: p.file, name: "Home Sketch.jpg", label: "Home Sketch" }));
+      sketch.forEach((p) => queue.push({ file: p.file, name: "Home Sketch.jpg", label: "Home Sketch", slot: "sketch" }));
       PHOTO_SLOTS.forEach((slot) => {
-        photos[slot.id].forEach((p, i) => queue.push({ file: p.file, name: `${slot.n} ${slot.label} - ${i + 1}.jpg`, label: slot.label }));
+        photos[slot.id].forEach((p, i) => queue.push({ file: p.file, name: `${slot.n} ${slot.label} - ${i + 1}.jpg`, label: slot.label, slot: slot.id }));
       });
 
       const uploaded = []; // {id, label} for each photo actually saved to Drive
@@ -102,7 +100,7 @@ export function useSubmissionForm(profile) {
         fd.append("filename", queue[i].name);
         fd.append("file", small);
         const ures = await fetch("/api/upload", { method: "POST", body: fd }).then((r) => r.json()).catch(() => null);
-        if (ures && ures.ok && ures.id) uploaded.push({ id: ures.id, label: queue[i].label });
+        if (ures && ures.ok && ures.id) uploaded.push({ id: ures.id, label: queue[i].label, slot: queue[i].slot });
         setProgress(Math.round(((i + 1) / Math.max(queue.length, 1)) * 100));
       }
 
@@ -110,7 +108,7 @@ export function useSubmissionForm(profile) {
       if (sres.folderId && uploaded.length) {
         fetch("/api/letters/generate", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ folderId: sres.folderId, report: f, companyName: f.inspectionCompany, images: uploaded }),
+          body: JSON.stringify({ folderId: sres.folderId, ref: sres.submissionId, report: f, companyName: f.inspectionCompany, images: uploaded }),
         }).catch(() => {});
       }
 

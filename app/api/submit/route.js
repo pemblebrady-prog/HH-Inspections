@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../lib/supabase/server";
+import { alertNewSubmission } from "../../../lib/alerts";
 import { getDrive, rootFolderId, findOrCreateFolder, createUniqueFolder, appendSubmission } from "../../../lib/drive";
 
 export const runtime = "nodejs";
@@ -99,6 +100,13 @@ export async function POST(req) {
 
     const ref = await recordInDatabase({ profile: auth.profile, data, date, isDemo, folderId, driveLink, photoCount: data.photoCount });
     if (ref) id = ref;
+    if (ref && !isDemo) {
+      await alertNewSubmission(createAdminClient(), {
+        ref, clientName: data.clientName, propertyAddress: data.propertyAddress, inspectorName: data.inspectorName,
+        companyName: data.inspectionCompany || (auth.profile && auth.profile.company && auth.profile.company.name),
+        origin: new URL(req.url).origin,
+      }).catch((e) => console.error("alert failed", e));
+    }
 
     if (!isDemo) await appendSubmission(drive, root, {
       submissionId: id, submittedAt,

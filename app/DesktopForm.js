@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { SINGLE, MULTI, PHOTO_SLOTS, FEE } from "../lib/formConfig";
+import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, FEE } from "../lib/formConfig";
 import PhotoSlot from "./PhotoSlot";
 import UserMenu from "./UserMenu";
 
@@ -9,10 +9,13 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
   const [step, setStep] = useState(1);
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: "auto" }); }, [step]);
   const cls = (k) => "field" + (invalid[k] ? " invalid" : "");
+  const co = form.profile && form.profile.company;
+  const internal = Boolean(co && co.is_internal);
+  const coName = co && !co.is_internal ? co.name : f.inspectionCompany;
+  const price = co && co.price_cents != null ? co.price_cents / 100 : Number(FEE);
 
   return (
     <>
-      <div className="demo">Live prototype — payment is stubbed (always passes) · files save to Google Drive when configured</div>
       <header><div className="bar">
         <a className="brand" href="#"><b>House&nbsp;<span>&amp;</span>&nbsp;Home</b><span className="sub">Inspector Portal</span></a>
         <div className="who">{onSwitchView && <button className="viewswitch" onClick={onSwitchView}>{switchLabel}</button>}<UserMenu profile={form.profile} /></div>
@@ -20,7 +23,7 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
 
       <div className="shell">
         <div className="stepper" aria-hidden="true">
-          {[["1", "Report & findings"], ["2", "Photos"], ["3", "Pay & submit"]].map(([n, lbl]) => {
+          {[["1", "Report & findings"], ["2", "Photos"], ["3", "Review & submit"]].map(([n, lbl]) => {
             const c = +n === step ? " active" : (+n < step ? " done" : "");
             return <div key={n} className={"s" + c}><span className="mono">Step {n}</span><span className="lbl">{lbl}</span></div>;
           })}
@@ -81,6 +84,18 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
             </fieldset>
 
             <fieldset>
+              <legend>Details for the letter</legend>
+              <div className="row c2">
+                {DETAILS.map((d) => (
+                  <div className="field" key={d.id}>
+                    <label htmlFor={d.id}>{d.label}</label>
+                    <input id={d.id} value={f[d.id]} onChange={set(d.id)} placeholder={d.placeholder} inputMode={d.inputMode} />
+                  </div>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset>
               <legend>Structure &amp; crawlspace — check all that apply</legend>
               {MULTI.map((m) => (
                 <div key={m.id} style={{ marginBottom: 16 }}>
@@ -114,41 +129,29 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
             <div className="countbar" style={{ marginTop: 18 }}><span>{totalPhotos()} file{totalPhotos() === 1 ? "" : "s"} total (incl. sketch)</span><span /></div>
             <div className="actions">
               <button className="btn ghost" onClick={() => setStep(1)}>← Back</button>
-              <button className="btn" onClick={() => setStep(3)}>Continue to payment →</button>
+              <button className="btn" onClick={() => setStep(3)}>Continue to review →</button>
             </div>
           </section>
         )}
 
         {step === 3 && (
           <section className="card">
-            <h2>Pay &amp; submit</h2>
-            <p className="intro">The ${FEE} certification fee is due at submission. Your report and photos are sent to the engineer the moment payment clears.</p>
+            <h2>Review &amp; submit</h2>
+            <p className="intro">Your report and {totalPhotos()} file{totalPhotos() === 1 ? "" : "s"} go to the engineer as soon as you submit.</p>
             <div className="summary">
               <div><div className="mono" style={{ color: "#9FD4E8" }}>Certification fee</div><small>{f.clientName ? "Client: " + f.clientName : "—"}</small></div>
-              <div className="amt">${FEE}.00</div>
+              <div className="amt">{internal ? "No charge" : `$${price.toFixed(2)}`}</div>
             </div>
-            <div className={cls("cardname")}><label className="req" htmlFor="cardname">Name on card</label><input id="cardname" value={f.cardname} onChange={set("cardname")} placeholder="Full name" />{invalid.cardname && <div className="err">Required.</div>}</div>
-            <div className={cls("cardnum")}><label className="req" htmlFor="cardnum">Card number</label>
-              <input id="cardnum" value={f.cardnum} inputMode="numeric" maxLength={19} placeholder="4242 4242 4242 4242"
-                onChange={(e) => form.setVal("cardnum", e.target.value.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim())} />
-              {invalid.cardnum && <div className="err">Enter a 16-digit card number.</div>}</div>
-            <div className="row c2">
-              <div className={cls("exp")}><label className="req" htmlFor="exp">Expiry</label>
-                <input id="exp" value={f.exp} maxLength={7} placeholder="MM / YY"
-                  onChange={(e) => { let v = e.target.value.replace(/\D/g, "").slice(0, 4); if (v.length > 2) v = v.slice(0, 2) + " / " + v.slice(2); form.setVal("exp", v); }} />
-                {invalid.exp && <div className="err">Required.</div>}</div>
-              <div className={cls("cvc")}><label className="req" htmlFor="cvc">CVC</label>
-                <input id="cvc" value={f.cvc} inputMode="numeric" maxLength={4} placeholder="123" onChange={(e) => form.setVal("cvc", e.target.value.replace(/\D/g, "").slice(0, 4))} />
-                {invalid.cvc && <div className="err">Required.</div>}</div>
-            </div>
-            <div className="lock">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="1.5" stroke="#5c6b74" strokeWidth="1.6" /><path d="M8 11V8a4 4 0 018 0v3" stroke="#5c6b74" strokeWidth="1.6" /></svg>
-              <span>Payment is stubbed for now — no card is charged. Swap in Stripe to go live.</span>
-            </div>
+            {!internal && (
+              <div className="lock">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="1.5" stroke="#5c6b74" strokeWidth="1.6" /><path d="M8 11V8a4 4 0 018 0v3" stroke="#5c6b74" strokeWidth="1.6" /></svg>
+                <span>Charged to {coName || "your company"}'s payment method on file. Online payment is being set up, so nothing is charged yet.</span>
+              </div>
+            )}
             {busy && <div className="progress"><div style={{ width: progress + "%" }} /></div>}
             <div className="actions">
               <button className="btn ghost" onClick={() => setStep(2)} disabled={busy}>← Back</button>
-              <button className="btn" onClick={payAndSubmit} disabled={busy}>{busy ? `Uploading… ${progress}%` : `Pay $${FEE}.00 & submit`}</button>
+              <button className="btn" onClick={payAndSubmit} disabled={busy}>{busy ? `Uploading… ${progress}%` : "Submit for certification"}</button>
             </div>
           </section>
         )}

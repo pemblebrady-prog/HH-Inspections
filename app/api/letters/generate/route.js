@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "../../../../lib/supabase/server";
-import { getDrive, rootFolderId, readCompanies, fileToDataUri, createGoogleDocFromHtml } from "../../../../lib/drive";
-import { buildLetterHtml } from "../../../../lib/letterTemplate";
+import { requireUser, createAdminClient } from "../../../../lib/supabase/server";
+import { generateLetter } from "../../../../lib/letters";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
+// Called by the form right after photos upload: builds the draft letter and
+// records the photo list + letter link on the submission.
 export async function POST(req) {
   const auth = await requireUser();
   if (auth.error) return auth.error;
@@ -12,42 +14,25 @@ export async function POST(req) {
   try { data = await req.json(); }
   catch { return NextResponse.json({ ok: false, error: "Bad request" }, { status: 400 }); }
 
-  const { folderId, report, companyName, images } = data; // images: [{id, label}] in report order
-  const drive = getDrive();
-  if (!drive || !folderId) {
-    return NextResponse.json({ ok: true, simulated: true });
-  }
-
+  const { folderId, ref, report, companyName, images } = data;
+  const db = createAdminClient();
   try {
-    // Resolve the selected company's branding (logo + contact info), if one was chosen.
-    let company = null, logoDataUri = null;
-    if (companyName) {
-      const { companies } = await readCompanies(drive, rootFolderId());
-      company = companies.find((c) => c.name === companyName) || null;
-      if (company && company.logoFileId) {
-        try { logoDataUri = await fileToDataUri(drive, company.logoFileId); } catch { /* fall back to text header */ }
-      }
+    // Only the person who submitted it (or an admin) can attach photos/letter to a job.
+    let canRecord = false;
+    if (db && ref) {
+      const { data: sub } = await db.from("submissions").select("inspector_id").eq("ref", ref).maybeSingle();
+      const me = auth.profile;
+      canRecord = Boolean(sub && (!me || me.role === "admin" || sub.inspector_id === me.id));
     }
-
-    // Pull each uploaded photo's bytes back from Drive to embed in the doc.
-    const embedded = [];
-    for (const img of images || []) {
-      try {
-        const dataUri = await fileToDataUri(drive, img.id);
-        embedded.push({ label: img.label, dataUri });
-      } catch (e) {
-        console.error("letter: could not embed image", img.id, e.message);
-      }
+    if (canRecord) {
+      await db.from("submissions").update({ photos: images || [], photo_count: (images || []).length }).eq("ref", ref);
     }
-
-    const html = buildLetterHtml({ report, company, logoDataUri, images: embedded });
-    const clientName = (report.clientName || "Client").trim();
-    const doc = await createGoogleDocFromHtml(drive, folderId, `${clientName} - Certification Report (Draft)`, html);
-
-    return NextResponse.json({ ok: true, docId: doc.id, docLink: doc.webViewLink });
+    const r = await generateLetter({ folderId, report, companyName, images });
+    if (r.simulated) return NextResponse.json({ ok: true, simulated: true });
+    if (canRecord) await db.from("submissions").update({ letter_doc_id: r.docId, letter_link: r.docLink }).eq("ref", ref);
+    return NextResponse.json({ ok: true, ...r });
   } catch (err) {
     console.error("letter generation error", err);
-    // Non-fatal by design — the submission itself already succeeded.
     return NextResponse.json({ ok: false, error: err.message || "Letter generation failed" }, { status: 500 });
   }
 }

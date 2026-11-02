@@ -189,3 +189,25 @@ table.track a:hover{text-decoration:underline}
 /* Welcome / home-screen steps */
 .steps{margin:6px 0 16px 20px;padding:0;line-height:1.6}
 .steps li{margin:4px 0}
+
+/* Review queue */
+.pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 16px;border-bottom:1px solid var(--line)}
+.tab{padding:9px 12px;color:var(--muted);text-decoration:none;border-bottom:3px solid transparent;margin-bottom:-1px;font-size:14px}
+.tab.on{color:var(--ink);border-color:var(--stamp);font-weight:600}
+.tab.right{margin-left:auto;font-size:13px}
+.tab .count{display:inline-block;margin-left:6px;background:var(--stamp);color:#fff;border-radius:99px;padding:0 7px;font-size:11px}
+.job-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:8px 0 16px}
+.job-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+@media (max-width:860px){.job-grid{grid-template-columns:1fr}}
+.kv{width:100%;border-collapse:collapse;font-size:14px}
+.kv th{text-align:left;font-weight:600;color:var(--muted);padding:6px 10px 6px 0;vertical-align:top;width:42%}
+.kv td{padding:6px 0;border-bottom:1px solid #0000000d}
+.kv.small{font-size:13px}
+.stack{display:flex;flex-direction:column;gap:8px}
+.stack .btn{text-align:center;text-decoration:none;margin:0}
+.stack hr{border:0;border-top:1px solid var(--line);margin:6px 0}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.photo{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:var(--ink);font-size:12px}
+.photo img{width:100%;aspect-ratio:4/3;object-fit:cover;border:1px solid var(--line);border-radius:6px;background:#0001}
+@media (max-width:719px){.hide-sm{display:none}}
