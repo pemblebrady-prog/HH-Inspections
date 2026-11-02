@@ -6,7 +6,7 @@ import { buildReceiptEmailHtml } from "../../../../lib/emailTemplates";
 export const runtime = "nodejs";
 
 export async function POST(req) {
-  const auth = await requireUser();
+  const auth = await requireUser(["admin"]); // legacy; the form no longer calls this
   if (auth.error) return auth.error;
   let data;
   try { data = await req.json(); }

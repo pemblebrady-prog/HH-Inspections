@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../lib/supabase/server";
 import { alertNewSubmission } from "../../../lib/alerts";
-import { chargeSubmission } from "../../../lib/charges";
+import { chargeSubmission, sendSubmissionEmails } from "../../../lib/charges";
 import { getDrive, rootFolderId, findOrCreateFolder, createUniqueFolder, appendSubmission } from "../../../lib/drive";
 
 export const runtime = "nodejs";
@@ -61,6 +61,7 @@ async function recordInDatabase({ profile, data, date, isDemo, folderId, driveLi
         const { data: full } = await db.from("companies").select("*").eq("id", row.company_id).single();
         const outcome = await chargeSubmission(db, { submission: row, company: full, origin });
         await db.from("submissions").update(outcome).eq("id", row.id);
+        await sendSubmissionEmails(db, { submission: row, company: full, inspectorEmail: profile && profile.email, outcome, origin });
       } catch (e) { console.error("charge step failed", e); }
     }
     return row.ref;

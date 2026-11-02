@@ -112,18 +112,6 @@ export function useSubmissionForm(profile) {
         }).catch(() => {});
       }
 
-      // Best-effort payment receipt email — same fire-and-forget pattern.
-      if (f.sendReportTo && !demo) {
-        fetch("/api/receipts/send", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            to: f.sendReportTo, submissionId: sres.submissionId, inspectorName: f.inspectorName,
-            clientName: f.clientName, propertyAddress: f.propertyAddress, inspectionDate: f.date,
-            amountPaid: Number(FEE),
-          }),
-        }).catch(() => {});
-      }
-
       setResult({ id: sres.submissionId, simulated: !!sres.simulated, path: sres.path, demo, driveLink: sres.driveLink, clientName: f.clientName, propertyAddress: f.propertyAddress, photos: queue.length });
       return true;
     } catch (err) {
