@@ -48,6 +48,13 @@ export default function ReviewActions({ job }) {
           </button>
         ))}
       </div>
+      {["unpaid", "failed"].includes(job.payment_status) && (
+        <div className="stack" style={{ marginTop: 12 }}>
+          <p className="hint" style={{ margin: 0 }}>Payment: <b>{job.payment_status}</b></p>
+          <button className="btn ghost" type="button" disabled={!!busy} onClick={() => act("charge")}>{busy === "charge" ? "Charging…" : "Charge payment method now"}</button>
+          <button className="btn ghost" type="button" disabled={!!busy} onClick={() => { if (window.confirm("Waive the fee for this job?")) act("waive"); }}>{busy === "waive" ? "Saving…" : "Waive fee"}</button>
+        </div>
+      )}
       <div className="field" style={{ marginTop: 16 }}>
         <label htmlFor="notes">Internal notes</label>
         <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Only admins see these." />

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../lib/supabase/server";
 import { alertNewSubmission } from "../../../lib/alerts";
+import { chargeSubmission } from "../../../lib/charges";
 import { getDrive, rootFolderId, findOrCreateFolder, createUniqueFolder, appendSubmission } from "../../../lib/drive";
 
 export const runtime = "nodejs";
@@ -21,7 +22,7 @@ const CARD_FIELDS = ["cardname", "cardnum", "exp", "cvc"];
 
 // Save the submission in the database. Best-effort for now (Drive is still the
 // main record until the data move); returns the database ref (HH-1001...) or null.
-async function recordInDatabase({ profile, data, date, isDemo, folderId, driveLink, photoCount }) {
+async function recordInDatabase({ profile, data, date, isDemo, folderId, driveLink, photoCount, origin }) {
   const db = createAdminClient();
   if (!db) return null;
   try {
@@ -51,8 +52,17 @@ async function recordInDatabase({ profile, data, date, isDemo, folderId, driveLi
       drive_link: driveLink || null,
       amount_cents: isDemo ? 0 : amount,
       payment_status: isDemo || internal ? "waived" : "unpaid", // payments not wired yet
-    }).select("ref").single();
+    }).select("id, ref, amount_cents, company_id, property_address").single();
     if (error) throw error;
+
+    // Charge the company's saved payment method (or hold the job if payment fails).
+    if (!isDemo && row.company_id) {
+      try {
+        const { data: full } = await db.from("companies").select("*").eq("id", row.company_id).single();
+        const outcome = await chargeSubmission(db, { submission: row, company: full, origin });
+        await db.from("submissions").update(outcome).eq("id", row.id);
+      } catch (e) { console.error("charge step failed", e); }
+    }
     return row.ref;
   } catch (err) {
     console.error("database insert failed", err);
@@ -82,7 +92,7 @@ export async function POST(req) {
 
   const drive = getDrive();
   if (!drive) {
-    const ref = await recordInDatabase({ profile: auth.profile, data, date, isDemo, photoCount: data.photoCount });
+    const ref = await recordInDatabase({ profile: auth.profile, data, date, isDemo, photoCount: data.photoCount, origin: new URL(req.url).origin });
     if (ref) id = ref;
     return NextResponse.json({ ok: true, simulated: true, submissionId: id, path: `${monthYear} / ${inspector} / ${clientBase}` });
   }
@@ -98,7 +108,7 @@ export async function POST(req) {
     const driveLink = `https://drive.google.com/drive/folders/${folderId}`;
     const path = `${isDemo ? "_Demo Submissions / " : ""}${monthYear} / ${inspector} / ${clientFolderName}`;
 
-    const ref = await recordInDatabase({ profile: auth.profile, data, date, isDemo, folderId, driveLink, photoCount: data.photoCount });
+    const ref = await recordInDatabase({ profile: auth.profile, data, date, isDemo, folderId, driveLink, photoCount: data.photoCount, origin: new URL(req.url).origin });
     if (ref) id = ref;
     if (ref && !isDemo) {
       await alertNewSubmission(createAdminClient(), {

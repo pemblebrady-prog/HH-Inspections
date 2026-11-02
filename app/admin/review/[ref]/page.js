@@ -70,7 +70,7 @@ export default async function ReviewJob({ params }) {
 
           <aside>
             <section className="card">
-              <ReviewActions job={{ ref: job.ref, status: job.status, letter_link: job.letter_link, drive_link: job.drive_link, review_notes: job.review_notes || "", photo_count: job.photo_count }} />
+              <ReviewActions job={{ ref: job.ref, status: job.status, payment_status: job.payment_status, letter_link: job.letter_link, drive_link: job.drive_link, review_notes: job.review_notes || "", photo_count: job.photo_count }} />
               <table className="kv small" style={{ marginTop: 16 }}><tbody>
                 <tr><th>Payment</th><td>{job.payment_status}{job.amount_cents ? ` · $${(job.amount_cents / 100).toFixed(2)}` : ""}</td></tr>
                 {job.reviewer && <tr><th>Reviewer</th><td>{job.reviewer.full_name || job.reviewer.email}</td></tr>}

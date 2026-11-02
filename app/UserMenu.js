@@ -14,7 +14,7 @@ export default function UserMenu({ profile }) {
       <div className="usermenu-panel">
         <div className="um-who"><b>{name}</b><span>{profile.email}</span><span className="mono">{roleLabel}{profile.company && !profile.company.is_internal ? ` · ${profile.company.name}` : ""}</span></div>
         <a href="/">Submit a job</a>
-        {profile.role === "company_owner" && <a href="/team">My team</a>}
+        {profile.role === "company_owner" && <><a href="/team">My team</a><a href="/billing">Billing</a></>}
         {profile.role === "admin" && <>
           <a href="/admin/review">Review queue</a>
           <a href="/tracker">Tracker</a>

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import HomeScreenSteps from "../HomeScreenSteps";
 import TeamManager from "../TeamManager";
+import PaymentSetup from "../PaymentSetup";
 import { normalizeLogo } from "../../lib/formConfig";
 
 async function postJSON(url, body) {
@@ -143,7 +144,8 @@ export default function Welcome({ profile }) {
               Each certification is ${((company.price_cents || 13500) / 100).toFixed(0)}, charged automatically when your inspector submits.
               We'll connect your <b>business bank account (ACH)</b>, or a card if you prefer.
             </p>
-            <div className="lock"><span>Online payment setup is coming soon. House &amp; Home will contact you to set it up. You can continue for now.</span></div>
+            <PaymentSetup />
+            <p className="hint" style={{ marginTop: 12 }}>You can also do this later from the menu under <b>Billing</b>. Jobs can't be charged until a payment method is saved.</p>
           </>)}
 
           {step === "team" && (<>
