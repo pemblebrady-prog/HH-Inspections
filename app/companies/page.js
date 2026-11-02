@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { normalizeLogo } from "../../lib/formConfig";
+import AppHeader from "../AppHeader";
 
 function logoUrl(fileId) {
   return fileId ? `https://drive.google.com/uc?export=view&id=${fileId}` : null;
@@ -93,10 +94,7 @@ export default function Companies() {
 
   return (
     <>
-      <header><div className="bar">
-        <a className="brand" href="/"><b>House&nbsp;<span>&amp;</span>&nbsp;Home</b><span className="sub">Inspector Companies</span></a>
-        <div className="who"><a className="viewswitch" href="/tracker">View tracker</a><a className="viewswitch" href="/admin/people">People</a><a className="viewswitch" href="/">Portal</a><form action="/auth/signout" method="post" style={{ display: "inline" }}><button className="viewswitch" type="submit">Sign out</button></form></div>
-      </div></header>
+      <AppHeader title="Inspector Companies" wide />
 
       <div className="shell" style={{ maxWidth: 720 }}>
         <div className="track-head"><h2>Inspector companies</h2></div>

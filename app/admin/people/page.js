@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import AppHeader from "../../AppHeader";
 
 const ROLE_LABEL = { admin: "Admin", company_owner: "Company owner", inspector: "Inspector" };
 const BLANK = { email: "", fullName: "", role: "inspector", companyId: "", newCompany: "" };
@@ -51,15 +52,7 @@ export default function People() {
 
   return (
     <>
-      <header><div className="bar">
-        <a className="brand" href="/"><b>House&nbsp;<span>&amp;</span>&nbsp;Home</b><span className="sub">People</span></a>
-        <div className="who">
-          <a className="viewswitch" href="/tracker">Tracker</a>
-          <a className="viewswitch" href="/companies">Companies</a>
-          <a className="viewswitch" href="/">Portal</a>
-          <form action="/auth/signout" method="post" style={{ display: "inline" }}><button className="viewswitch" type="submit">Sign out</button></form>
-        </div>
-      </div></header>
+      <AppHeader title="People" wide />
 
       <div className="shell" style={{ maxWidth: 1080 }}>
         <section className="card">

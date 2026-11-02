@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import AppHeader from "../AppHeader";
 
 function fmtDate(iso) {
   if (!iso) return "—";
@@ -29,10 +30,7 @@ export default function Tracker() {
 
   return (
     <>
-      <header><div className="bar">
-        <a className="brand" href="/"><b>House&nbsp;<span>&amp;</span>&nbsp;Home</b><span className="sub">Submission Tracker</span></a>
-        <div className="who"><a className="viewswitch" href="/admin/people">People</a><a className="viewswitch" href="/companies">Companies</a><a className="viewswitch" href="/">Portal</a><form action="/auth/signout" method="post" style={{ display: "inline" }}><button className="viewswitch" type="submit">Sign out</button></form></div>
-      </div></header>
+      <AppHeader title="Submission Tracker" wide />
 
       <div className="shell" style={{ maxWidth: 1080 }}>
         <div className="track-head">

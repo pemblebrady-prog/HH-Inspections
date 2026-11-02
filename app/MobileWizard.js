@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, FEE } from "../lib/formConfig";
 import PhotoSlot from "./PhotoSlot";
-import UserMenu from "./UserMenu";
+import AppHeader from "./AppHeader";
 
 const byId = (id) => SINGLE.find((s) => s.id === id);
 
@@ -115,10 +115,7 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
 
   return (
     <div className="wiz">
-      <header><div className="bar">
-        <a className="brand" href="#"><b>House&nbsp;<span>&amp;</span>&nbsp;Home</b><span className="sub">Inspector Portal</span></a>
-        <div className="who">{onSwitchView && <button className="viewswitch" onClick={onSwitchView}>{switchLabel}</button>}<UserMenu profile={form.profile} /></div>
-      </div></header>
+      <AppHeader title="Inspector Portal" profile={form.profile} right={onSwitchView && <button className="viewswitch" onClick={onSwitchView}>{switchLabel}</button>} />
 
       <div className="wiz-progress"><div style={{ width: pct + "%" }} /></div>
 

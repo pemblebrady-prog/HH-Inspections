@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useSubmissionForm } from "./useSubmissionForm";
 import DesktopForm from "./DesktopForm";
 import MobileWizard from "./MobileWizard";
+import AppHeader from "./AppHeader";
 import { FEE } from "../lib/formConfig";
 
 export default function PortalPage({ profile }) {
@@ -21,7 +22,7 @@ export default function PortalPage({ profile }) {
 
   const isMobile = manual !== null ? manual : autoMobile;
 
-  if (form.result) return <Success result={form.result} />;
+  if (form.result) return <Success result={form.result} profile={profile} />;
 
   return (
     <>
@@ -44,12 +45,10 @@ function DemoBar({ form }) {
   );
 }
 
-function Success({ result }) {
+function Success({ result, profile }) {
   return (
     <>
-      <header><div className="bar">
-        <a className="brand" href="#"><b>House&nbsp;<span>&amp;</span>&nbsp;Home</b><span className="sub">Inspector Portal</span></a>
-      </div></header>
+      <AppHeader title="Inspector Portal" profile={profile} />
       <div className="shell">
         <section className="card">
           <div className="done-wrap">

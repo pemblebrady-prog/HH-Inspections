@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "../../lib/supabase/server";
 import { authEnabled } from "../../lib/supabase/config";
-import UserMenu from "../UserMenu";
 import BillingClient from "./BillingClient";
+import AppHeader from "../AppHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +14,7 @@ export default async function BillingPage() {
   if (profile.role !== "company_owner") redirect("/");
   return (
     <>
-      <header><div className="bar">
-        <a className="brand" href="/"><b>House&nbsp;<span>&amp;</span>&nbsp;Home</b><span className="sub">Billing</span></a>
-        <div className="who"><a className="viewswitch" href="/">Portal</a><UserMenu profile={profile} /></div>
-      </div></header>
+      <AppHeader title="Billing" profile={profile} />
       <div className="shell" style={{ maxWidth: 900 }}>
         <BillingClient />
       </div>

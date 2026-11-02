@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import HomeScreenSteps from "../HomeScreenSteps";
 import TeamManager from "../TeamManager";
 import PaymentSetup from "../PaymentSetup";
+import AppHeader from "../AppHeader";
 import { normalizeLogo } from "../../lib/formConfig";
 
 async function postJSON(url, body) {
@@ -86,10 +87,7 @@ export default function Welcome({ profile }) {
 
   return (
     <>
-      <header><div className="bar">
-        <a className="brand" href="#"><b>House&nbsp;<span>&amp;</span>&nbsp;Home</b><span className="sub">Welcome</span></a>
-        <div className="who"><form action="/auth/signout" method="post"><button className="viewswitch" type="submit">Sign out</button></form></div>
-      </div></header>
+      <AppHeader title="Welcome" profile={profile} minimal />
 
       <div className="shell" style={{ maxWidth: 620 }}>
         <div className="stepper" aria-hidden="true">
