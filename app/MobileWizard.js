@@ -4,6 +4,7 @@ import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, FEE } from "../lib/formConfig";
 import PhotoSlot from "./PhotoSlot";
 import AppHeader from "./AppHeader";
 import UploadStatus from "./UploadStatus";
+import TopNotices from "./TopNotices";
 
 const byId = (id) => SINGLE.find((s) => s.id === id);
 
@@ -118,6 +119,7 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
   return (
     <div className="wiz">
       <AppHeader title="Inspector Portal" profile={form.profile} right={onSwitchView && <button className="viewswitch" onClick={onSwitchView}>{switchLabel}</button>} />
+      <TopNotices form={form} />
 
       <div className="wiz-progress"><div style={{ width: pct + "%" }} /></div>
 

@@ -61,6 +61,7 @@ export function useSubmissionForm(profile) {
   // ---------- Draft: autosave and restore ----------
   const loaded = useRef(false);
   const [restoredAt, setRestoredAt] = useState(null);
+  const [orderInfo, setOrderInfo] = useState(null); // the order this job came from
   const [resuming, setResuming] = useState(null); // unfinished upload found on open
 
   useEffect(() => {
@@ -70,6 +71,20 @@ export function useSubmissionForm(profile) {
       const pending = await unfinishedQueues();
       if (cancelled) return;
       if (pending.length) { loaded.current = true; resumeUpload(pending[0]); return; }
+
+      // Opened from an assigned order (/?order=<id>): start a fresh job pre-filled from it.
+      const orderId = new URLSearchParams(window.location.search).get("order");
+      if (orderId) {
+        try {
+          const d = await fetch(`/api/orders/prefill?id=${encodeURIComponent(orderId)}`).then((r) => r.json());
+          if (!cancelled && d.ok) {
+            setF((cur) => ({ ...cur, ...Object.fromEntries(Object.entries(d.prefill).filter(([, val]) => val !== "")) }));
+            setOrderInfo(d.info);
+          }
+        } catch { /* fall through to a blank form */ }
+        loaded.current = true;
+        return;
+      }
       const d = await idbGet(DRAFT_KEY);
       if (cancelled) return;
       if (d && d.f) {
@@ -194,5 +209,5 @@ export function useSubmissionForm(profile) {
 
   return { f, set, setVal, toggle, companies, sketch, addSketch, setSketch: clearSketch, photos, addTo, removeFrom,
     invalid, validate, totalPhotos, busy, progress, upload, result, payAndSubmit, demo, demoLoading, fillDemo, profile,
-    restoredAt, startOver, resuming, retryUpload };
+    restoredAt, startOver, resuming, retryUpload, orderInfo };
 }

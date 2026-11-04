@@ -24,7 +24,7 @@ export default function InstallPrompt() {
   }, []);
 
   useEffect(() => {
-    if (path === "/login" || path.startsWith("/welcome") || path.startsWith("/auth")) return;
+    if (path === "/login" || path.startsWith("/welcome") || path.startsWith("/auth") || path.startsWith("/request") || path.startsWith("/statement")) return;
     const ua = navigator.userAgent || "";
     const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
     if (standalone || dismissedRecently()) return;

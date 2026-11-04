@@ -14,6 +14,7 @@ function navFor(profile, minimal) {
   const submit = { href: "/", label: "Submit a job" };
   const jobs = { href: "/jobs", label: "My jobs" };
   if (profile.role === "admin") return [
+    { href: "/admin/orders", label: "Orders" },
     { href: "/admin/review", label: "Review queue" },
     submit,
     { href: "/admin/people", label: "People" },

@@ -275,3 +275,8 @@ body:has(.wiz-nav) .install-sheet{bottom:calc(84px + env(safe-area-inset-bottom)
   .shell{max-width:none !important;padding:0 !important;margin:0 !important}
   .statement-card{border:0 !important;padding:0 !important;background:#fff !important;box-shadow:none !important}
 }
+
+/* Orders on the Submit page */
+.order-banner{max-width:820px;margin:10px auto 0;padding:12px 16px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--steel);border-radius:6px;font-size:14px;display:flex;flex-direction:column;gap:4px}
+.order-banner .month-list li{gap:12px}
+@media (max-width:719px){.order-banner{margin:8px 12px 0}}

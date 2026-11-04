@@ -24,7 +24,7 @@ async function recordInDatabase({ profile, data, date, isDemo, folderId, driveLi
   const db = createAdminClient();
   if (!db) return null;
   try {
-    const report = Object.fromEntries(Object.entries(data).filter(([k]) => !CARD_FIELDS.includes(k) && k !== "demo" && k !== "photoCount"));
+    const report = Object.fromEntries(Object.entries(data).filter(([k]) => !CARD_FIELDS.includes(k) && !["demo", "photoCount", "clientId"].includes(k)));
     // Company: the signed-in user's company, else the one picked on the form.
     let company = profile && profile.company ? profile.company : null;
     if (!company && data.inspectionCompany) {
@@ -33,6 +33,7 @@ async function recordInDatabase({ profile, data, date, isDemo, folderId, driveLi
     }
     const internal = company ? company.is_internal : false;
     const amount = company ? company.price_cents : Math.round(Number(process.env.NEXT_PUBLIC_CERT_FEE || 135) * 100);
+    const orderId = typeof data.orderId === "string" && /^[0-9a-f-]{36}$/i.test(data.orderId) ? data.orderId : null;
     const insertRow = {
       company_id: company ? company.id : null,
       inspector_id: profile ? profile.id : null,
@@ -52,14 +53,23 @@ async function recordInDatabase({ profile, data, date, isDemo, folderId, driveLi
       payment_status: isDemo || internal ? "waived" : "unpaid", // charged in /api/submit/finalize once photos arrive
     };
     let { data: row, error } = await db.from("submissions")
-      .insert({ ...insertRow, status: "uploading", client_id: clientId || null })
+      .insert({ ...insertRow, status: "uploading", client_id: clientId || null, ...(orderId ? { order_id: orderId } : {}) })
       .select("id, ref, amount_cents, company_id, property_address").single();
-    if (error && /client_id|uploading|enum/i.test(error.message || "")) {
+    if (error && /client_id|uploading|enum|order_id/i.test(error.message || "")) {
       // Migration 0006 not run yet: fall back to the older shape.
       ({ data: row, error } = await db.from("submissions").insert(insertRow).select("id, ref, amount_cents, company_id, property_address").single());
     }
     if (error) throw error;
 
+    // Came from an order: link them (admins, or the inspector it's assigned to).
+    if (orderId && !isDemo) {
+      try {
+        const { data: o } = await db.from("orders").select("id, inspector_id").eq("id", orderId).maybeSingle();
+        if (o && (!profile || profile.role === "admin" || !o.inspector_id || o.inspector_id === profile.id)) {
+          await db.from("orders").update({ submission_id: row.id, status: "inspected" }).eq("id", o.id);
+        }
+      } catch (e) { console.error("order link failed", e.message); }
+    }
     return row.ref;
   } catch (err) {
     console.error("database insert failed", err);

@@ -29,12 +29,6 @@ export default function PortalPage({ profile }) {
   return (
     <>
       {form.demo && <DemoBar form={form} />}
-      {form.restoredAt && !form.busy && (
-        <div className="restored">
-          <span>We restored your unfinished submission (saved {new Date(form.restoredAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}).</span>
-          <button type="button" onClick={() => { if (window.confirm("Clear this submission and its photos and start over?")) form.startOver(); }}>Start over</button>
-        </div>
-      )}
       {isMobile
         ? <MobileWizard form={form} onSwitchView={() => setManual(false)} switchLabel="Desktop view" />
         : <DesktopForm form={form} onSwitchView={() => setManual(true)} switchLabel="Mobile view" />}

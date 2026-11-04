@@ -4,6 +4,7 @@ import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, FEE } from "../lib/formConfig";
 import PhotoSlot from "./PhotoSlot";
 import AppHeader from "./AppHeader";
 import UploadStatus from "./UploadStatus";
+import TopNotices from "./TopNotices";
 
 export default function DesktopForm({ form, onSwitchView, switchLabel }) {
   const { f, set, toggle, invalid, validate, companies, sketch, addSketch, setSketch, photos, addTo, removeFrom, totalPhotos, busy, progress, payAndSubmit } = form;
@@ -18,6 +19,7 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
   return (
     <>
       <AppHeader title="Inspector Portal" profile={form.profile} right={onSwitchView && <button className="viewswitch hide-sm" onClick={onSwitchView}>{switchLabel}</button>} />
+      <TopNotices form={form} />
 
       <div className="shell">
         <div className="stepper" aria-hidden="true">
