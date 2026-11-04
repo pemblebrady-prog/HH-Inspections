@@ -4,6 +4,7 @@ import { gfDiagnose } from "../../../../../lib/gravity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 90;
 
 // Admins: /api/admin/orders/test?entry=418 shows how the website answers (no secrets shown).
 export async function GET(req) {

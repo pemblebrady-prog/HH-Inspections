@@ -3,6 +3,7 @@ import { importEntry } from "../../../lib/orders";
 import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 export const metadata = { title: "Request received | House & Home" };
 
 // Gravity Forms sends the requester here after they submit (confirmation → Redirect).
