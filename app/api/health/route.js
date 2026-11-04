@@ -27,6 +27,8 @@ export async function GET() {
       CRON_SECRET: has("CRON_SECRET"),
     },
     stripeMode: String(process.env.STRIPE_SECRET_KEY || "").startsWith("sk_live_") ? "live" : process.env.STRIPE_SECRET_KEY ? "test" : "off",
+    gfFormIds: { raw: JSON.stringify(process.env.GF_FORM_IDS ?? null), parsed: String(process.env.GF_FORM_IDS || "").split(",").map((x) => Number(x.trim())).filter(Boolean) },
+    gfSettingNames: Object.keys(process.env).filter((k) => /^GF|GRAVITY/i.test(k)).sort(),
     supabaseUrlLooksRight: /^https:\/\/[a-z0-9]+\.supabase\.co\/?$/.test(url.trim()),
     // Names of any Supabase-ish settings, to catch typos (names only).
     supabaseSettingNames: Object.keys(process.env).filter((k) => /SUPA/i.test(k)).sort(),
