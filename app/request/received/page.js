@@ -11,6 +11,8 @@ export const metadata = { title: "Request received | House & Home" };
 export default async function RequestReceived({ searchParams }) {
   const form = Number(searchParams && searchParams.form), entry = Number(searchParams && searchParams.entry);
   let order = null;
+  const ref = String((searchParams && searchParams.ref) || "");
+  if (/^OR-\d{3,7}$/.test(ref)) order = { ref };
   if (form && entry) {
     const db = createAdminClient();
     const h = headers();
