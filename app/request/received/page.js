@@ -16,7 +16,9 @@ export default async function RequestReceived({ searchParams }) {
     const h = headers();
     const origin = `${h.get("x-forwarded-proto") || "https"}://${h.get("host")}`;
     if (db) {
-      try { order = await importEntry(db, form, entry, { origin }); }
+      const { data: sent } = await db.from("orders").select("ref").eq("source_form_id", form).eq("source_entry_id", entry).maybeSingle();
+      if (sent) order = sent;
+      else try { order = await importEntry(db, form, entry, { origin }); }
       catch (e) { console.error("order import failed", form, entry, e.message); }
     }
   }
