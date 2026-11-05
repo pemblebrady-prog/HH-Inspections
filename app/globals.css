@@ -290,3 +290,14 @@ body:has(.wiz-nav) .install-sheet{bottom:calc(84px + env(safe-area-inset-bottom)
 .usermenu-panel .um-viewas button.btn{display:flex;justify-content:center;width:100%;padding:8px 12px;background:var(--stamp);color:#fff;border:1px solid var(--stamp);border-radius:6px;font-weight:600}
 .usermenu-panel .um-viewas button.btn:disabled{opacity:.45}
 .queue-refresh{display:inline-flex;align-items:center;gap:8px}
+/* Request form */
+.rq-h{font-size:1.05rem;font-weight:700;margin:26px 0 12px}
+.yn-list{border:1px solid var(--line);border-radius:8px;background:#fff;margin-bottom:16px}
+.yn-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-top:1px solid #0000000d}
+.yn-row:first-child{border-top:0}
+.yn-row>span{font-size:.95rem}
+.yn-row .chips{flex-wrap:nowrap}
+.yn-row .chip{min-width:52px;justify-content:center}
+.rq-more{margin:4px 0 16px}
+.rq-more summary{cursor:pointer;color:var(--steel);font-size:.92rem;margin-bottom:10px}
+@media (max-width:620px){.rq-copy{gap:0}}

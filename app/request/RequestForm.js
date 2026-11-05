@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { MAIN_TYPES, FOUNDATION_TYPES, CONVENTIONAL_TYPES } from "../../lib/requestOptions";
 
-const STEPS = ["Inspection", "Requested by", "Home", "Other occupants", "Report copies", "Access & safety"];
+const STEPS = ["Inspection & you", "The home", "Copies & send"];
 const blankAddr = { street: "", line2: "", city: "", state: "AZ", zip: "" };
 const BLANK = {
   mainType: "", foundationType: "", conventionalType: "", otherType: "",
@@ -40,6 +40,19 @@ function Choice({ path, options, label, req, error }) {
   );
 }
 const YesNo = (props) => <Choice {...props} options={["Yes", "No"]} />;
+// One line per question: the question on the left, Yes / No on the right.
+function YesNoRow({ path, label }) {
+  const { f, pick } = useContext(FormCtx);
+  const cur = getPath(f, path);
+  return (
+    <div className="yn-row">
+      <span>{label}</span>
+      <div className="chips">
+        {["Yes", "No"].map((o) => <button type="button" key={o} className={"chip" + (cur === o ? " on" : "")} aria-pressed={cur === o} onClick={() => pick(path, cur === o ? "" : o)}>{o}</button>)}
+      </div>
+    </div>
+  );
+}
 function Input({ path, label, req, type, placeholder, error, autoComplete, inputMode }) {
   const { bind } = useContext(FormCtx);
   return (
@@ -85,15 +98,20 @@ export default function RequestForm() {
       if (f.mainType === MAIN_TYPES[1] && !f.conventionalType) e.conventionalType = "Choose one.";
       if (f.mainType === "Other" && !f.otherType.trim()) e.otherType = "Describe the inspection you need.";
     }
-    if (n === 1) {
+    if (n === 0) {
       if (!f.requester.first.trim() || !f.requester.last.trim()) e.requesterName = "Enter your first and last name.";
       if (f.requester.phone.replace(/\D/g, "").length < 10) e.requesterPhone = "Enter a 10-digit phone number.";
       if (!EMAIL_RE.test(f.requester.email.trim())) e.requesterEmail = "Enter a valid email.";
     }
-    if (n === 2 && (!f.property.street.trim() || !f.property.city.trim() || !f.property.zip.trim())) e.property = "Enter the home's street, city and ZIP.";
-    if (n === 4) f.copies.forEach((c, i) => { if (c.email.trim() && !EMAIL_RE.test(c.email.trim())) e[`copy${i}`] = "Check this email address."; });
+    if (n === 1 && (!f.property.street.trim() || !f.property.city.trim() || !f.property.zip.trim())) e.property = "Enter the home's street, city and ZIP.";
+    if (n === 2) f.copies.forEach((c, i) => { if (c.email.trim() && !EMAIL_RE.test(c.email.trim())) e[`copy${i}`] = "Check this email address."; });
     return e;
   }
+  // Once errors are showing, clear each one as soon as it's fixed.
+  useEffect(() => {
+    setErrors((cur) => (Object.keys(cur).length ? stepErrors(step) : cur));
+  }, [f]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function next() {
     const e = stepErrors(step); setErrors(e);
     if (Object.keys(e).length) return;
@@ -121,7 +139,7 @@ export default function RequestForm() {
           {STEPS.map((lbl, n) => <div key={lbl} className={"s" + (n === step ? " active" : n < step ? " done" : "")}><span className="mono">Step {n + 1}</span><span className="lbl">{lbl}</span></div>)}
         </div>
         <section className="card">
-          <h2>Manufactured Home Engineering Inspection Request</h2>
+          <h2 style={{ marginBottom: 18 }}>Manufactured Home Engineering Inspection Request</h2>
           {/* Hidden from people; bots fill it in. */}
           <input ref={honey} name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }} />
 
@@ -130,11 +148,9 @@ export default function RequestForm() {
             {f.mainType === MAIN_TYPES[0] && <Choice path="foundationType" label="Foundation inspection" req options={FOUNDATION_TYPES} error={errors.foundationType} />}
             {f.mainType === MAIN_TYPES[1] && <Choice path="conventionalType" label="Conventional loan" req options={CONVENTIONAL_TYPES} error={errors.conventionalType} />}
             {f.mainType === "Other" && <Input path="otherType" label="Describe the inspection you need" req error={errors.otherType} />}
-          </>)}
 
-          {step === 1 && (<>
-            <p className="intro">This person will receive a copy of the report and is responsible for payment prior to inspection.</p>
-            <Input path="requester.company" label="Company" autoComplete="organization" />
+            <h3 className="rq-h">Requested by</h3>
+            <p className="hint" style={{ marginTop: -6, marginBottom: 14 }}>This person will receive a copy of the report and is responsible for payment prior to inspection.</p>
             <div className="row c2">
               <Input path="requester.first" label="First name" req error={errors.requesterName} autoComplete="given-name" />
               <Input path="requester.last" label="Last name" req autoComplete="family-name" />
@@ -143,62 +159,65 @@ export default function RequestForm() {
               <Input path="requester.phone" label="Phone" req type="tel" inputMode="tel" error={errors.requesterPhone} autoComplete="tel" />
               <Input path="requester.email" label="Email" req type="email" inputMode="email" error={errors.requesterEmail} autoComplete="email" />
             </div>
-            <fieldset><legend>Your address</legend><Address base="requester.address" auto="billing" /></fieldset>
+            <Input path="requester.company" label="Company (optional)" autoComplete="organization" />
+            <details className="rq-more"><summary>Add your mailing address (optional)</summary><Address base="requester.address" auto="billing" /></details>
+          </>)}
+
+          {step === 1 && (<>
+            <h3 className="rq-h" style={{ marginTop: 0 }}>Location of home</h3>
+            <Address base="property" req error={errors.property} />
+
+            <h3 className="rq-h">Who's there</h3>
+            <div className="yn-list">
+              <YesNoRow path="occupant.occupied" label="Is the home occupied?" />
+              {f.occupant.occupied === "Yes" && <YesNoRow path="occupant.informed" label="Has the occupant been told about the inspection?" />}
+              <YesNoRow path="otherOccupants" label="Anyone else living on the property?" />
+            </div>
+            {f.occupant.occupied === "Yes" && (
+              <fieldset><legend>Occupant</legend>
+                <div className="row c2"><Input path="occupant.first" label="First name" /><Input path="occupant.last" label="Last name" /></div>
+                <div className="row c2"><Input path="occupant.phone" label="Phone" type="tel" inputMode="tel" /><Input path="occupant.email" label="Email" type="email" inputMode="email" /></div>
+              </fieldset>
+            )}
+            {f.otherOccupants === "Yes" && (
+              <fieldset><legend>Other occupant</legend>
+                <div className="row c2"><Input path="other.first" label="First name" /><Input path="other.last" label="Last name" /></div>
+                <div className="row c2"><Input path="other.phone" label="Phone" type="tel" inputMode="tel" /><Input path="other.email" label="Email" type="email" inputMode="email" /></div>
+              </fieldset>
+            )}
+            {f.occupant.occupied === "Yes" && <p className="hint">Once your date and time are confirmed, please let everyone at the property know when the inspection is.</p>}
+
+            <h3 className="rq-h">Access &amp; safety</h3>
+            <p className="hint" style={{ marginTop: -6, marginBottom: 10 }}>For our inspectors' safety. Answer what you know; add anything else in the comments.</p>
+            <div className="yn-list">
+              <YesNoRow path="access.fenced" label="Is the yard fenced?" />
+              <YesNoRow path="access.lockedGates" label="Are there locked gates?" />
+              <YesNoRow path="access.dogs" label="Are there dogs on the property?" />
+              <YesNoRow path="access.underHomeLocked" label="Is access under the home locked?" />
+              <YesNoRow path="access.lockbox" label="Is there a contractor box to unlock gates?" />
+            </div>
+            {f.access.lockbox === "Yes" && <Input path="access.lockboxCode" label="Contractor box code" />}
           </>)}
 
           {step === 2 && (<>
-            <fieldset><legend>Location of home</legend><Address base="property" req error={errors.property} /></fieldset>
-            <YesNo path="occupant.occupied" label="Is the home occupied?" />
-            {f.occupant.occupied === "Yes" && (<>
-              <div className="row c2">
-                <Input path="occupant.first" label="Occupant first name" />
-                <Input path="occupant.last" label="Occupant last name" />
-              </div>
-              <div className="row c2">
-                <Input path="occupant.phone" label="Occupant phone" type="tel" inputMode="tel" />
-                <Input path="occupant.email" label="Occupant email" type="email" inputMode="email" />
-              </div>
-              <YesNo path="occupant.informed" label="Has the occupant been informed of the inspection?" />
-              <p className="hint">Once your date and time have been confirmed, please inform all occupants of the house and/or property of the inspection time.</p>
-            </>)}
-          </>)}
-
-          {step === 3 && (<>
-            <YesNo path="otherOccupants" label="Are there any other occupants on the property?" />
-            {f.otherOccupants === "Yes" && (<>
-              <div className="row c2">
-                <Input path="other.first" label="Additional occupant's first name" />
-                <Input path="other.last" label="Last name" />
-              </div>
-              <div className="row c2">
-                <Input path="other.phone" label="Phone" type="tel" inputMode="tel" />
-                <Input path="other.email" label="Email" type="email" inputMode="email" />
-              </div>
-            </>)}
-          </>)}
-
-          {step === 4 && (<>
-            <p className="intro">Fill these in if you'd like the report sent to additional people. The report is emailed automatically to the requester's email.</p>
-            {[0, 1].map((i) => (
-              <fieldset key={i}><legend>Copy {i + 1}</legend>
-                <div className="row c2">
-                  <Input path={`copies.${i}.first`} label="First name" />
-                  <Input path={`copies.${i}.last`} label="Last name" />
-                </div>
+            <h3 className="rq-h" style={{ marginTop: 0 }}>Send the report to anyone else? <span className="hint" style={{ display: "inline", fontWeight: 400 }}>(optional)</span></h3>
+            <p className="hint" style={{ marginTop: -6, marginBottom: 12 }}>The report is emailed to you automatically.</p>
+            {[0, 1].map((i) => (i === 0 || f.copies[0].email || f.copies[1].email || f.copies[1].first) && (
+              <div className="row c3 rq-copy" key={i}>
+                <Input path={`copies.${i}.first`} label="First name" />
+                <Input path={`copies.${i}.last`} label="Last name" />
                 <Input path={`copies.${i}.email`} label="Email" type="email" inputMode="email" error={errors[`copy${i}`]} />
-              </fieldset>
+              </div>
             ))}
-          </>)}
+            <div className="field"><label htmlFor="comments">Comments</label><textarea id="comments" placeholder="Gate instructions, best times, anything we should know" {...bind("comments")} /></div>
 
-          {step === 5 && (<>
-            <p className="intro">Please answer these to the best of your knowledge; they're for the safety of our inspectors. If you're not sure, leave a comment below.</p>
-            <YesNo path="access.fenced" label="Is the yard fenced?" />
-            <YesNo path="access.lockedGates" label="Are there locked gates?" />
-            <YesNo path="access.dogs" label="Are there dogs on the property?" />
-            <YesNo path="access.underHomeLocked" label="Is access under the home locked?" />
-            <YesNo path="access.lockbox" label="Is there a contractor box to unlock gates?" />
-            {f.access.lockbox === "Yes" && <Input path="access.lockboxCode" label="Contractor box code" />}
-            <div className="field"><label htmlFor="comments">Comments</label><textarea id="comments" {...bind("comments")} /></div>
+            <h3 className="rq-h">Check your request</h3>
+            <table className="kv small"><tbody>
+              <tr><th>Inspection</th><td>{f.mainType === "Other" ? f.otherType : [f.mainType, f.foundationType || f.conventionalType].filter(Boolean).join(" · ")}</td></tr>
+              <tr><th>Home</th><td>{[f.property.street, f.property.city, f.property.zip].filter(Boolean).join(", ")}</td></tr>
+              <tr><th>Requested by</th><td>{[`${f.requester.first} ${f.requester.last}`.trim(), f.requester.company, f.requester.phone, f.requester.email].filter(Boolean).join(" · ")}</td></tr>
+            </tbody></table>
+            <p className="hint">Need to change something? Use Previous.</p>
           </>)}
 
           {err && <p className="err" style={{ marginTop: 10 }}>{err}</p>}
