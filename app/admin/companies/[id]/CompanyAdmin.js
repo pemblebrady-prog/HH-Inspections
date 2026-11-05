@@ -54,7 +54,7 @@ export default function CompanyAdmin({ id }) {
       <div className="grid2" style={{ gap: 18, marginTop: 18, alignItems: "start" }}>
         {!c.is_internal && <PriceCard c={c} def={d.defaultPriceCents} onSave={patch} />}
         {!c.is_internal && <StatusCard c={c} people={activePeople.length} onSave={patch} />}
-        {!c.is_internal && <PaymentCard c={c} />}
+        {!c.is_internal && <PaymentCard c={c} onSave={patch} />}
         <DetailsCard key={c.id + (c.logo_drive_file_id || "")} c={c} onSave={patch} onLogo={(r) => { setD(r); setMsg("Logo saved."); }} />
       </div>
 
@@ -171,10 +171,25 @@ function StatusCard({ c, people, onSave }) {
   );
 }
 
-function PaymentCard({ c }) {
+function PaymentCard({ c, onSave }) {
+  const [busy, setBusy] = useState(false);
+  async function setMode(ppj) {
+    if (ppj === Boolean(c.pay_per_job)) return;
+    setBusy(true);
+    await onSave({ payPerJob: ppj }, ppj ? "Now pay-as-you-go: they'll pay by card after each submission." : "Now charged automatically to the saved payment method.");
+    setBusy(false);
+  }
   return (
     <section className="card">
-      <h2>Payment method</h2>
+      <h2>How they pay</h2>
+      <div className="chips" style={{ margin: "10px 0 12px" }}>
+        <button type="button" disabled={busy} className={"chip" + (!c.pay_per_job ? " on" : "")} onClick={() => setMode(false)}>Saved method, charged automatically</button>
+        <button type="button" disabled={busy} className={"chip" + (c.pay_per_job ? " on" : "")} onClick={() => setMode(true)}>Pay by card for each job</button>
+      </div>
+      <p className="hint" style={{ marginTop: 0 }}>{c.pay_per_job
+        ? "After submitting, they pay by card on the job's pay page (also emailed). The job goes to the engineer once paid."
+        : "Each submission is charged to the saved bank account or card."}</p>
+      <h3 style={{ fontSize: "1rem", marginTop: 14 }}>Payment method on file</h3>
       {c.payment_ready_at ? (
         <>
           <p style={{ fontWeight: 600, margin: "10px 0 4px" }}>{c.payment_method_label || "On file"}</p>

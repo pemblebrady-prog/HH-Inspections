@@ -16,6 +16,11 @@ export default async function BillingPage() {
     <>
       <AppHeader title="Billing" profile={profile} />
       <div className="shell" style={{ maxWidth: 900 }}>
+        {profile.company && profile.company.pay_per_job && (
+          <div className="card" style={{ marginBottom: 18 }}>
+            <p style={{ margin: 0 }}><b>Your company pays by card for each job.</b> After a job is submitted, pay for it on the job's pay page (linked in the email and on My jobs). Nothing is charged automatically.</p>
+          </div>
+        )}
         <BillingClient />
       </div>
     </>

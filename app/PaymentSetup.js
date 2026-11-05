@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 
 // Loads Stripe.js from Stripe (required by Stripe; never bundled).
-function loadStripeJs() {
+export function loadStripeJs() {
   if (typeof window === "undefined") return Promise.reject(new Error("no window"));
   if (window.Stripe) return Promise.resolve(window.Stripe);
   return new Promise((resolve, reject) => {

@@ -182,7 +182,7 @@ export function useSubmissionForm(profile) {
   async function finish(q, r) {
     if (r.ok) {
       setResult({ id: r.ref, simulated: r.simulated, demo: q.demo, driveLink: r.driveLink, clientName: q.report.clientName,
-        propertyAddress: q.report.propertyAddress, photos: r.photos, onHold: r.status === "on_hold", payment: r.payment_status });
+        propertyAddress: q.report.propertyAddress, photos: r.photos, onHold: r.status === "on_hold" && !r.pay_now, payment: r.payment_status, payNow: Boolean(r.pay_now), amount: r.amount_cents });
     }
     setBusy(false);
   }

@@ -12,7 +12,7 @@ async function ctx() {
   if (!db) return { error: NextResponse.json({ ok: false, error: "Database isn't configured." }, { status: 500 }) };
   return { db };
 }
-const fail = (e) => NextResponse.json({ ok: false, error: e.message || String(e) }, { status: 500 });
+const fail = (e) => NextResponse.json({ ok: false, error: /pay_per_job/.test(e.message || "") ? "Run database update 0013 in Supabase first." : e.message || String(e) }, { status: 500 });
 
 export async function GET(_req, { params }) {
   const c = await ctx(); if (c.error) return c.error;

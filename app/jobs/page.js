@@ -20,6 +20,7 @@ export default async function MyJobs() {
   if (!profile) redirect("/login?next=/jobs");
   if (profile.role === "admin" || profile.role === "engineer") redirect("/admin/review");
   const owner = profile.role === "company_owner";
+  const payPerJob = Boolean(profile.company && profile.company.pay_per_job);
   const db = createAdminClient();
 
   let rows = [], err = null;
@@ -58,7 +59,8 @@ export default async function MyJobs() {
                     {owner && <td>{r.inspector_name || "—"}</td>}
                     <td>{r.inspection_date || "—"}</td>
                     <td>{fmt(r.submitted_at)}</td>
-                    <td>{PAY[r.payment_status] || r.payment_status}{r.amount_cents && r.payment_status !== "waived" ? ` · $${(r.amount_cents / 100).toFixed(0)}` : ""}</td>
+                    <td>{PAY[r.payment_status] || r.payment_status}{r.amount_cents && r.payment_status !== "waived" ? ` · $${(r.amount_cents / 100).toFixed(0)}` : ""}
+                      {payPerJob && r.status === "on_hold" && r.payment_status !== "paid" && <div><a className="btn" style={{ marginTop: 6, padding: "6px 12px" }} href={`/pay/${encodeURIComponent(r.ref)}`}>Pay now</a></div>}</td>
                     <td>{r.final_pdf_id
                       ? <a href={`/api/jobs/report?ref=${encodeURIComponent(r.ref)}`} target="_blank" rel="noreferrer">Download PDF</a>
                       : <span className="hint">{r.status === "certified" ? "Sending soon" : "Not ready"}</span>}</td>

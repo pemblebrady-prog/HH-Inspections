@@ -17,7 +17,7 @@ async function ctx() {
 export async function GET() {
   const c = await ctx(); if (c.error) return c.error;
   try { return NextResponse.json({ ok: true, ...(await listCompanies(c.db)) }); }
-  catch (e) { return NextResponse.json({ ok: false, error: e.message }, { status: 500 }); }
+  catch (e) { return NextResponse.json({ ok: false, error: /pay_per_job/.test(e.message) ? "Run database update 0013 in Supabase first." : e.message }, { status: 500 }); }
 }
 
 // Add a company. Body: { name, price? }

@@ -15,7 +15,7 @@ export default function Welcome({ profile }) {
   const owner = profile.role === "company_owner";
   const company = profile.company || {};
   const steps = owner
-    ? [["details", "Your details"], ["company", "Company"], ["payment", "Payment"], ["team", "Your inspectors"], ["phone", "Home screen"]]
+    ? [["details", "Your details"], ["company", "Company"], ...(company.pay_per_job ? [] : [["payment", "Payment"]]), ["team", "Your inspectors"], ["phone", "Home screen"]]
     : [["details", "Your details"], ["reports", "Reports"], ["phone", "Home screen"]];
   const [i, setI] = useState(0);
   const [busy, setBusy] = useState(false);

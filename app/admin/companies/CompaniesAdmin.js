@@ -50,7 +50,7 @@ export default function CompaniesAdmin() {
                     <td><a href={`/admin/companies/${c.id}`} style={{ fontWeight: 600, color: "var(--ink)" }}>{c.name}</a>{c.is_internal && <div className="hint" style={{ marginTop: 0 }}>House &amp; Home</div>}</td>
                     <td><OnOff on={c.active} /></td>
                     <td>{c.is_internal ? "No charge" : c.price_cents == null ? <>{money(c.effective_price_cents)} <span className="hint">default</span></> : <><b>{money(c.price_cents)}</b> <span className="hint">custom</span></>}</td>
-                    <td>{c.is_internal ? "—" : c.payment_ready_at ? c.payment_method_label || "On file" : <span style={{ color: "var(--err)" }}>None yet</span>}
+                    <td>{c.is_internal ? "—" : c.pay_per_job ? "Pays by card per job" : c.payment_ready_at ? c.payment_method_label || "On file" : <span style={{ color: "var(--err)" }}>None yet</span>}
                       {c.failed_payments > 0 && <div className="err" style={{ marginTop: 2 }}>{c.failed_payments} failed</div>}</td>
                     <td>{c.people}</td>
                     <td>{c.jobs_this_month}</td>
