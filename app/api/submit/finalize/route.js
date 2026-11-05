@@ -3,6 +3,8 @@ import { requireUser, createAdminClient } from "../../../../lib/supabase/server"
 import { chargeSubmission, sendSubmissionEmails } from "../../../../lib/charges";
 import { alertNewSubmission } from "../../../../lib/alerts";
 import { generateLetter } from "../../../../lib/letters";
+import { engineerForJob } from "../../../../lib/engineers";
+import { recordLetter } from "../../../../lib/letterRecord";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -52,8 +54,9 @@ export async function POST(req) {
   // Draft letter (best effort).
   try {
     const companyName = (sub.report && sub.report.inspectionCompany) || (company && !company.is_internal ? company.name : "");
-    const r = await generateLetter({ folderId: sub.drive_folder_id, report: sub.report || {}, companyName, images });
-    if (!r.simulated) await db.from("submissions").update({ letter_doc_id: r.docId, letter_link: r.docLink }).eq("id", sub.id);
+    const engineer = await engineerForJob(db, sub);
+    const r = await generateLetter({ folderId: sub.drive_folder_id, report: sub.report || {}, companyName, images, engineer });
+    if (!r.simulated) await recordLetter(db, ["id", sub.id], r);
   } catch (e) { console.error("letter failed", e); }
 
   return NextResponse.json({ ok: true, ref: sub.ref, status: outcome.status, payment_status: outcome.payment_status });

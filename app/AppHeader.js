@@ -20,9 +20,10 @@ function navFor(profile, minimal) {
     { href: "/admin/people", label: "People" },
     { href: "/admin/statements", label: "Statements" },
     { href: "/admin/companies", label: "Companies" },
+    { href: "/admin/engineer", label: "Engineers" },
     { href: "/tracker", label: "Old tracker" },
   ];
-  if (profile.role === "engineer") return [{ href: "/admin/review", label: "Review queue" }];
+  if (profile.role === "engineer") return [{ href: "/admin/review", label: "Review queue" }, { href: "/admin/engineer", label: "My PE details" }];
   if (profile.role === "company_owner") return [submit, { ...jobs, label: "Company jobs" }, { href: "/team", label: "My team" }, { href: "/billing", label: "Billing" }];
   return [submit, jobs];
 }

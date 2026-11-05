@@ -103,7 +103,7 @@ export default function People() {
               <tbody>
                 {shown.map((p) => (
                   <tr key={p.id} style={p.active ? null : { opacity: 0.55 }}>
-                    <td>{p.full_name || "—"}{p.id === me ? " (you)" : ""}</td>
+                    <td>{p.full_name || "—"}{p.id === me ? " (you)" : ""}{p.role === "engineer" && <div><a className="hint" href={`/admin/engineer?id=${p.id}`}>PE details →</a></div>}</td>
                     <td>{p.email}</td>
                     <td>
                       <select value={p.role} disabled={p.id === me} onChange={(e) => update(p.id, { role: e.target.value })}>

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../../lib/supabase/server";
 import { generateLetter } from "../../../../lib/letters";
+import { engineerForJob } from "../../../../lib/engineers";
+import { recordLetter } from "../../../../lib/letterRecord";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -27,9 +29,9 @@ export async function POST(req) {
     if (canRecord) {
       await db.from("submissions").update({ photos: images || [], photo_count: (images || []).length }).eq("ref", ref);
     }
-    const r = await generateLetter({ folderId, report, companyName, images });
+    const r = await generateLetter({ folderId, report, companyName, images, engineer: await engineerForJob(db, null) });
     if (r.simulated) return NextResponse.json({ ok: true, simulated: true });
-    if (canRecord) await db.from("submissions").update({ letter_doc_id: r.docId, letter_link: r.docLink }).eq("ref", ref);
+    if (canRecord) await recordLetter(db, ["ref", ref], r);
     return NextResponse.json({ ok: true, ...r });
   } catch (err) {
     console.error("letter generation error", err);

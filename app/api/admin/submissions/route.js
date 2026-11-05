@@ -3,6 +3,8 @@ import { requireUser, createAdminClient } from "../../../../lib/supabase/server"
 import { generateLetter } from "../../../../lib/letters";
 import { chargeSubmission } from "../../../../lib/charges";
 import { deliverFinalLetter } from "../../../../lib/delivery";
+import { engineerForJob } from "../../../../lib/engineers";
+import { recordLetter } from "../../../../lib/letterRecord";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -58,9 +60,14 @@ export async function PATCH(req) {
       patch = { review_notes: String(b.notes || "").slice(0, 5000) };
     } else if (b.action === "letter") {
       const companyName = (sub.report && sub.report.inspectionCompany) || (sub.company && !sub.company.is_internal ? sub.company.name : "");
-      const r = await generateLetter({ folderId: sub.drive_folder_id, report: sub.report || {}, companyName, images: sub.photos || [] });
+      // Regenerating: the engineer clicking it (if they're an engineer) signs it; otherwise the reviewer / main engineer.
+      const signer = auth.profile && auth.profile.role === "engineer" ? { ...sub, letter_engineer_id: auth.profile.id } : { ...sub, letter_engineer_id: null };
+      const engineer = await engineerForJob(db, signer);
+      const r = await generateLetter({ folderId: sub.drive_folder_id, report: sub.report || {}, companyName, images: sub.photos || [], engineer });
       if (r.simulated) return NextResponse.json({ ok: false, error: "Google Drive isn't connected, so the letter can't be made." }, { status: 400 });
-      patch = { letter_doc_id: r.docId, letter_link: r.docLink };
+      await recordLetter(db, ["id", sub.id], r);
+      const { data: fresh } = await db.from("submissions").select("*").eq("id", sub.id).single();
+      return NextResponse.json({ ok: true, submission: fresh });
     } else {
       return NextResponse.json({ ok: false, error: "Unknown action" }, { status: 400 });
     }

@@ -1,6 +1,7 @@
 import { getCurrentProfile, createAdminClient } from "../../../lib/supabase/server";
 import { StatusPill } from "../../../lib/statusLabels";
 import AdminHeader from "../../AdminHeader";
+import { listEngineers, engineerIssues, ENGINEER_COLS } from "../../../lib/engineers";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ function fmt(iso) {
   return isNaN(d) ? iso : d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Phoenix" });
 }
 
-// Ron's queue of jobs, newest first. (Admins only, via app/admin/layout.js.)
+// Ron's queue of jobs, newest first. (Staff only, via app/admin/layout.js.)
 export default async function ReviewQueue({ searchParams }) {
   const profile = await getCurrentProfile();
   const tab = TABS.find((t) => t[0] === (searchParams && searchParams.tab)) || TABS[0];
@@ -37,10 +38,26 @@ export default async function ReviewQueue({ searchParams }) {
     counts.queue = (c.data || []).length;
   } else err = "Database isn't configured.";
 
+  // PE details warnings: engineers see their own; admins see every engineer's.
+  let issues = [];
+  if (db && profile && profile.role === "engineer") {
+    const { data: meEng } = await db.from("profiles").select(ENGINEER_COLS).eq("id", profile.id).maybeSingle();
+    if (meEng) issues = engineerIssues(meEng).map((t) => ({ t, href: "/admin/engineer" }));
+  } else if (db && profile && profile.role === "admin") {
+    const engs = await listEngineers(db);
+    issues = engs.flatMap((e) => engineerIssues(e).map((t) => ({ t, href: `/admin/engineer?id=${e.id}` })));
+  }
+
   return (
     <>
       <AdminHeader title="Review queue" profile={profile} />
       <div className="shell" style={{ maxWidth: 1080 }}>
+        {issues.length > 0 && (
+          <div className="card" role="alert" style={{ marginBottom: 16, padding: 18, borderColor: "#e2b9b2", background: "#fbebeb" }}>
+            <b>PE details need attention</b>
+            <ul style={{ margin: "6px 0 0 18px" }}>{issues.map((x) => <li key={x.t}><a href={x.href}>{x.t}</a></li>)}</ul>
+          </div>
+        )}
         <div className="tabs">
           {TABS.map(([k, label]) => (
             <a key={k} href={`/admin/review?tab=${k}${showDemo ? "&demo=1" : ""}`} className={"tab" + (k === tab[0] ? " on" : "")}>

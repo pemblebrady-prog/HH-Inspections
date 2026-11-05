@@ -56,6 +56,9 @@ export default async function ReviewJob({ params }) {
           <StatusPill status={job.status} />
         </div>
 
+        {profile && profile.role === "engineer" && job.letter_link && job.letter_engineer_id && job.letter_engineer_id !== profile.id && (
+          <p className="hint" style={{ background: "#f9eeda", padding: "8px 12px", borderRadius: 6 }}>This draft letter has another engineer's name and stamp. Tap "Regenerate letter" to put yours on it.</p>
+        )}
         <div className="job-grid">
           <section className="card">
             <h3>Draft letter preview</h3>
