@@ -1,6 +1,7 @@
 import { getCurrentProfile, createAdminClient } from "../../../lib/supabase/server";
 import { StatusPill } from "../../../lib/statusLabels";
 import AdminHeader from "../../AdminHeader";
+import QueueRefresh from "./QueueRefresh";
 import { listEngineers, engineerIssues, ENGINEER_COLS } from "../../../lib/engineers";
 
 export const dynamic = "force-dynamic";
@@ -65,7 +66,10 @@ export default async function ReviewQueue({ searchParams }) {
               {label}{k === "queue" && counts.queue ? <span className="count">{counts.queue}</span> : null}
             </a>
           ))}
-          <a className="tab right" href={`/admin/review?tab=${tab[0]}${showDemo ? "" : "&demo=1"}`}>{showDemo ? "Hide demo jobs" : "Show demo jobs"}</a>
+          <span className="tab right" style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+            <QueueRefresh waiting={counts.queue || 0} loadedAt={new Date().toISOString()} />
+            <a href={`/admin/review?tab=${tab[0]}${showDemo ? "" : "&demo=1"}`} style={{ color: "inherit" }}>{showDemo ? "Hide demo jobs" : "Show demo jobs"}</a>
+          </span>
         </div>
 
         {err && <div className="card"><p className="err">Couldn't load jobs: {err}</p></div>}

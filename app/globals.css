@@ -289,3 +289,4 @@ body:has(.wiz-nav) .install-sheet{bottom:calc(84px + env(safe-area-inset-bottom)
 .um-viewas select{padding:7px 8px;border:1px solid var(--line);border-radius:6px;font:inherit;font-size:14px;background:#fff}
 .usermenu-panel .um-viewas button.btn{display:flex;justify-content:center;width:100%;padding:8px 12px;background:var(--stamp);color:#fff;border:1px solid var(--stamp);border-radius:6px;font-weight:600}
 .usermenu-panel .um-viewas button.btn:disabled{opacity:.45}
+.queue-refresh{display:inline-flex;align-items:center;gap:8px}
