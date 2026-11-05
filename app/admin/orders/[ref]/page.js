@@ -32,7 +32,7 @@ export default async function OrderPage({ params }) {
         <div className="job-head">
           <div>
             <h2 style={{ margin: 0 }}>{o.property_address || o.ref}</h2>
-            <p className="intro" style={{ margin: "6px 0 0" }}>{o.ref} · {o.inspection_detail} · requested {fmt(o.requested_at)}</p>
+            <p className="intro" style={{ margin: "6px 0 0" }}>{o.ref}{o.isn_order_number ? ` · ISN #${o.isn_order_number}` : ""} · {o.inspection_detail} · requested {fmt(o.requested_at)}</p>
           </div>
         </div>
         <div className="job-grid">
@@ -58,7 +58,7 @@ export default async function OrderPage({ params }) {
           </div>
           <aside>
             <section className="card">
-              <OrderActions order={{ ref: o.ref, id: o.id, status: o.status, scheduledLocal: azInput(o.scheduled_at), inspectorId: o.inspector_id || "", notes: o.notes || "", job: o.job }}
+              <OrderActions order={{ ref: o.ref, id: o.id, status: o.status, scheduledLocal: azInput(o.scheduled_at), inspectorId: o.inspector_id || "", notes: o.notes || "", isnNumber: o.isn_order_number || "", job: o.job }}
                 people={(people || []).map((p) => ({ id: p.id, label: `${p.full_name || p.email}${p.company && !p.company.is_internal ? ` (${p.company.name})` : ""}` }))} />
             </section>
           </aside>

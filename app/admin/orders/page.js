@@ -1,7 +1,5 @@
 import { getCurrentProfile, createAdminClient } from "../../../lib/supabase/server";
-import { gfEnabled } from "../../../lib/gravity";
 import AdminHeader from "../../AdminHeader";
-import SyncButton from "./SyncButton";
 
 export const dynamic = "force-dynamic";
 
@@ -12,13 +10,23 @@ const fmt = (iso, withTime) => iso ? new Date(iso).toLocaleString("en-US", { tim
 export default async function Orders({ searchParams }) {
   const profile = await getCurrentProfile();
   const tab = TABS.find((t) => t[0] === (searchParams && searchParams.tab)) || TABS[0];
+  const search = String((searchParams && searchParams.q) || "").trim().slice(0, 60);
   const db = createAdminClient();
   let rows = [], err = null, counts = {};
   if (db) {
-    let q = db.from("orders").select("ref, status, property_address, inspection_detail, requester, requested_at, scheduled_at, inspector:profiles!orders_inspector_id_fkey(full_name, email)")
-      .order(tab[0] === "scheduled" ? "scheduled_at" : "requested_at", { ascending: tab[0] === "scheduled" }).limit(300);
-    if (tab[2]) q = q.in("status", tab[2]);
-    const r = await q;
+    const build = (cols) => {
+      let q = db.from("orders").select(cols)
+        .order(tab[0] === "scheduled" ? "scheduled_at" : "requested_at", { ascending: tab[0] === "scheduled" }).limit(300);
+      if (tab[2] && !search) q = q.in("status", tab[2]);
+      if (search) {
+        const s = search.replace(/[%,()*]/g, " ").trim();
+        q = q.or([`ref.ilike.%${s}%`, `property_address.ilike.%${s}%`, `requester->>name.ilike.%${s}%`, ...(cols.includes("isn_") ? [`isn_order_number.ilike.%${s}%`] : [])].join(","));
+      }
+      return q;
+    };
+    const BASE = "ref, status, property_address, inspection_detail, requester, requested_at, scheduled_at, inspector:profiles!orders_inspector_id_fkey(full_name, email)";
+    let r = await build(BASE + ", isn_order_number");
+    if (r.error && /isn_order_number/.test(r.error.message)) r = await build(BASE); // migration 0011 not run yet
     if (r.error) err = r.error.message; else rows = r.data;
     const c = await db.from("orders").select("status").eq("status", "new");
     counts.open = (c.data || []).length;
@@ -32,17 +40,20 @@ export default async function Orders({ searchParams }) {
           <div className="tabs" style={{ flex: 1 }}>
             {TABS.map(([k, label]) => <a key={k} href={`/admin/orders?tab=${k}`} className={"tab" + (k === tab[0] ? " on" : "")}>{label}{k === "open" && counts.open ? <span className="count">{counts.open}</span> : null}</a>)}
           </div>
-          {gfEnabled() && <SyncButton />}
+          <form method="get" action="/admin/orders" style={{ display: "flex", gap: 6 }}>
+            <input name="q" defaultValue={search} placeholder="Search order, ISN #, address, name" style={{ padding: "7px 10px", border: "1px solid var(--line)", borderRadius: 6, minWidth: 240 }} />
+            {search && <a className="viewswitch" href="/admin/orders" style={{ alignSelf: "center" }}>Clear</a>}
+          </form>
         </div>
-        {!gfEnabled() && <div className="card" style={{ marginBottom: 14 }}><p className="hint" style={{ margin: 0 }}>The website request form isn't connected yet (Gravity Forms settings missing in Vercel).</p></div>}
+        {search && <p className="hint" style={{ margin: "0 0 10px" }}>Showing every order matching "{search}".</p>}
         {err && <div className="card"><p className="err">Couldn't load orders: {err}</p></div>}
-        {!err && rows.length === 0 && <div className="card"><p className="intro">No orders here. New requests from the website form appear in "To schedule".</p></div>}
+        {!err && rows.length === 0 && <div className="card"><p className="intro">{search ? "No orders match that search." : 'No orders here. New requests from the request form appear in "To schedule".'}</p></div>}
         {rows.length > 0 && (
           <div className="table-wrap"><table className="track">
             <thead><tr><th>Order</th><th>Status</th><th>Property</th><th>Type</th><th>Requested by</th><th>Requested</th><th>Scheduled</th><th>Inspector</th></tr></thead>
             <tbody>{rows.map((o) => { const L = LABEL[o.status] || [o.status, "#5c6b74", "#f0efec"]; const r = o.requester || {}; return (
               <tr key={o.ref}>
-                <td><a href={`/admin/orders/${encodeURIComponent(o.ref)}`}><b>{o.ref}</b></a></td>
+                <td><a href={`/admin/orders/${encodeURIComponent(o.ref)}`}><b>{o.ref}</b></a>{o.isn_order_number ? <><br /><span className="hint">ISN #{o.isn_order_number}</span></> : null}</td>
                 <td><span className="pill" style={{ color: L[1], background: L[2] }}>{L[0]}</span></td>
                 <td>{o.property_address || "—"}</td>
                 <td>{o.inspection_detail || "—"}</td>

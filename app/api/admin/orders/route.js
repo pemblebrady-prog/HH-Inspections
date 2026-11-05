@@ -22,7 +22,7 @@ export async function POST(req) {
   }
 }
 
-// PATCH: schedule / assign / status / notes. Body: { ref, scheduledAt?, inspectorId?, status?, notes?, notifyInspector? }
+// PATCH: schedule / assign / status / notes / ISN number. Body: { ref, scheduledAt?, inspectorId?, status?, notes?, isnNumber?, notifyInspector? }
 export async function PATCH(req) {
   const auth = await requireUser(["admin"]);
   if (auth.error) return auth.error;
@@ -36,6 +36,7 @@ export async function PATCH(req) {
   if (b.scheduledAt !== undefined) patch.scheduled_at = b.scheduledAt ? new Date(b.scheduledAt).toISOString() : null;
   if (b.inspectorId !== undefined) patch.inspector_id = b.inspectorId || null;
   if (b.notes !== undefined) patch.notes = String(b.notes || "").slice(0, 5000);
+  if (b.isnNumber !== undefined) patch.isn_order_number = String(b.isnNumber || "").trim().slice(0, 40) || null;
   if (b.status !== undefined) {
     if (!["new", "scheduled", "inspected", "canceled"].includes(b.status)) return NextResponse.json({ ok: false, error: "Bad status" }, { status: 400 });
     patch.status = b.status;
@@ -43,7 +44,7 @@ export async function PATCH(req) {
     patch.status = "scheduled"; // date + inspector set
   }
   const { data: updated, error } = await db.from("orders").update(patch).eq("id", order.id).select("*").single();
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ ok: false, error: /isn_order_number/.test(error.message) ? "Run database update 0011 in Supabase first." : error.message }, { status: 500 });
 
   // Tell the inspector about a new assignment (best effort).
   let notified = false;

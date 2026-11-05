@@ -5,6 +5,7 @@ export default function OrderActions({ order, people }) {
   const [when, setWhen] = useState(order.scheduledLocal);
   const [who, setWho] = useState(order.inspectorId);
   const [notes, setNotes] = useState(order.notes);
+  const [isn, setIsn] = useState(order.isnNumber || "");
   const [notify, setNotify] = useState(true);
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState("");
@@ -12,7 +13,7 @@ export default function OrderActions({ order, people }) {
 
   async function save(extra = {}, label = "save") {
     setBusy(label); setErr(""); setMsg("");
-    const body = { ref: order.ref, scheduledAt: when ? `${when}:00-07:00` : null, inspectorId: who || null, notes, notifyInspector: notify && who && who !== order.inspectorId, ...extra };
+    const body = { ref: order.ref, scheduledAt: when ? `${when}:00-07:00` : null, inspectorId: who || null, notes, ...(isn !== (order.isnNumber || "") ? { isnNumber: isn } : {}), notifyInspector: notify && who && who !== order.inspectorId, ...extra };
     const d = await fetch("/api/admin/orders", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
       .then((r) => r.json()).catch((e) => ({ ok: false, error: String(e) }));
     setBusy("");
@@ -34,6 +35,8 @@ export default function OrderActions({ order, people }) {
       {who && who !== order.inspectorId && (
         <label className="agree" style={{ marginBottom: 10 }}><input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} /><span>Email the inspector about this assignment</span></label>
       )}
+      <div className="field"><label htmlFor="isn">ISN order number <span className="hint" style={{ display: "inline" }}>(optional)</span></label>
+        <input id="isn" value={isn} onChange={(e) => setIsn(e.target.value)} placeholder="From ISN, after scheduling" autoComplete="off" /></div>
       <div className="field"><label htmlFor="notes">Office notes</label>
         <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Payment status in ISN, gate instructions, etc." /></div>
       <div className="stack">

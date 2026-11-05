@@ -27,11 +27,17 @@ export default async function ReviewJob({ params }) {
     .eq("ref", ref).maybeSingle();
   if (!job) notFound();
 
+  let order = null;
+  if (job.order_id) {
+    const r = await db.from("orders").select("ref, isn_order_number").eq("id", job.order_id).maybeSingle();
+    order = r.error ? (await db.from("orders").select("ref").eq("id", job.order_id).maybeSingle()).data : r.data;
+  }
   const recipients = job.delivered_to && job.delivered_to.length ? job.delivered_to : await defaultRecipients(db, job);
   const f = job.report || {};
   const { tagLine, findings, corrections } = buildFindings(f);
   const photos = Array.isArray(job.photos) ? job.photos : [];
   const rows = [
+    ["Order", order ? <a href={`/admin/orders/${encodeURIComponent(order.ref)}`}>{order.ref}{order.isn_order_number ? ` · ISN #${order.isn_order_number}` : ""}</a> : ""],
     ["Property", job.property_address], ["Client", job.client_name], ["Date inspected", job.inspection_date],
     ["Inspection type", f.inspectionType], ["Company", job.company ? job.company.name : f.inspectionCompany],
     ["Inspector", job.inspector ? `${job.inspector.full_name || job.inspector.email}${job.inspector.certificate_number ? ` · Cert ${job.inspector.certificate_number}` : ""}${job.inspector.phone ? ` · ${job.inspector.phone}` : ""}` : job.inspector_name],
