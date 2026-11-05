@@ -79,16 +79,9 @@ export default function ReviewActions({ job }) {
           </button>
         ))}
       </div>
-      {["unpaid", "failed"].includes(job.payment_status) && (
-        <div className="stack" style={{ marginTop: 12 }}>
-          <p className="hint" style={{ margin: 0 }}>Payment: <b>{job.payment_status}</b></p>
-          <button className="btn ghost" type="button" disabled={!!busy} onClick={() => act("charge")}>{busy === "charge" ? "Charging…" : "Charge payment method now"}</button>
-          <button className="btn ghost" type="button" disabled={!!busy} onClick={() => { if (window.confirm("Waive the fee for this job?")) act("waive"); }}>{busy === "waive" ? "Saving…" : "Waive fee"}</button>
-        </div>
-      )}
       <div className="field" style={{ marginTop: 16 }}>
         <label htmlFor="notes">Internal notes</label>
-        <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Only admins see these." />
+        <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Only House & Home staff see these." />
         <button className="viewswitch" type="button" style={{ marginTop: 6 }} disabled={!!busy} onClick={() => act("notes", { notes })}>{busy === "notes" ? "Saving…" : "Save notes"}</button>
       </div>
       {results && <ul className="hint" style={{ margin: "8px 0 0 18px" }}>{results.map((r) => <li key={r.to}>{r.ok ? "Sent" : "Not sent"}: {r.to}{r.error ? ` (${r.error})` : ""}</li>)}</ul>}

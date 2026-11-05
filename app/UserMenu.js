@@ -6,7 +6,7 @@ export default function UserMenu({ profile }) {
   const name = profile.full_name || profile.email;
   const initials = (profile.full_name || profile.email || "?")
     .split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
-  const roleLabel = { admin: "Admin", company_owner: "Company owner", inspector: "Inspector" }[profile.role] || "";
+  const roleLabel = { admin: "Admin", engineer: "Engineer", company_owner: "Company owner", inspector: "Inspector" }[profile.role] || "";
   return (
     <details className="usermenu">
       <summary aria-label="Account"><span className="avatar">{initials}</span><span className="caret">▾</span></summary>

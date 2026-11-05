@@ -22,7 +22,7 @@ export async function POST(req) {
     if (db && ref) {
       const { data: sub } = await db.from("submissions").select("inspector_id").eq("ref", ref).maybeSingle();
       const me = auth.profile;
-      canRecord = Boolean(sub && (!me || me.role === "admin" || sub.inspector_id === me.id));
+      canRecord = Boolean(sub && (!me || me.role === "admin" || me.role === "engineer" || sub.inspector_id === me.id));
     }
     if (canRecord) {
       await db.from("submissions").update({ photos: images || [], photo_count: (images || []).length }).eq("ref", ref);

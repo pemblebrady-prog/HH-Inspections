@@ -3,9 +3,9 @@ import { getDrive } from "../../../../lib/drive";
 
 export const runtime = "nodejs";
 
-// Admins: stream a job photo from Drive so it can be shown on the review page.
+// Staff: stream a job photo from Drive so it can be shown on the review page.
 export async function GET(req) {
-  const auth = await requireUser(["admin"]);
+  const auth = await requireUser(["admin", "engineer"]);
   if (auth.error) return auth.error;
   const id = new URL(req.url).searchParams.get("id");
   const drive = getDrive();

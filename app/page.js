@@ -11,6 +11,7 @@ export default async function Page() {
   if (authEnabled) {
     profile = await getCurrentProfile();
     if (!profile) redirect("/login");
+    if (profile.role === "engineer") redirect("/admin/review"); // engineers review; they don't submit jobs
     // First sign-in: finish setup before submitting (admins skip this).
     if (profile.role !== "admin" && !profile.onboarded_at) redirect("/welcome");
   }

@@ -12,7 +12,7 @@ export async function GET(req) {
   const drive = getDrive();
   if (!id || !/^[\w-]+$/.test(id) || !drive) return new Response("Not found", { status: 404 });
   const me = auth.profile;
-  if (me && me.role !== "admin" && !(me.company && me.company.logo_drive_file_id === id)) return new Response("Not found", { status: 404 });
+  if (me && me.role !== "admin" && me.role !== "engineer" && !(me.company && me.company.logo_drive_file_id === id)) return new Response("Not found", { status: 404 });
   try {
     const meta = await drive.files.get({ fileId: id, fields: "mimeType", supportsAllDrives: true });
     const mime = meta.data.mimeType || "image/png";

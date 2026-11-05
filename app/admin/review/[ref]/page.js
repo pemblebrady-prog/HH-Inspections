@@ -5,6 +5,7 @@ import { buildFindings } from "../../../../lib/letterContent";
 import { StatusPill } from "../../../../lib/statusLabels";
 import AdminHeader from "../../../AdminHeader";
 import ReviewActions from "./ReviewActions";
+import PaymentActions from "./PaymentActions";
 import { defaultRecipients } from "../../../../lib/delivery";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ export default async function ReviewJob({ params }) {
   const db = createAdminClient();
   if (!db) notFound();
   const ref = decodeURIComponent(params.ref);
+  const isAdmin = !profile || profile.role === "admin"; // engineers don't see payments
   const { data: job } = await db.from("submissions")
     .select("*, company:companies(name, is_internal, phone, email), inspector:profiles!submissions_inspector_id_fkey(full_name, email, phone, certificate_number), reviewer:profiles!submissions_reviewed_by_fkey(full_name, email)")
     .eq("ref", ref).maybeSingle();
@@ -74,12 +76,16 @@ export default async function ReviewJob({ params }) {
             <section className="card">
               <ReviewActions job={{ ref: job.ref, status: job.status, payment_status: job.payment_status, letter_link: job.letter_link, drive_link: job.drive_link, review_notes: job.review_notes || "", photo_count: job.photo_count, final_pdf_link: job.final_pdf_link, delivered_to: job.delivered_to, recipients }} />
               <table className="kv small" style={{ marginTop: 16 }}><tbody>
-                <tr><th>Payment</th><td>{job.payment_status}{job.amount_cents ? ` · $${(job.amount_cents / 100).toFixed(2)}` : ""}</td></tr>
                 {job.reviewer && <tr><th>Reviewer</th><td>{job.reviewer.full_name || job.reviewer.email}</td></tr>}
                 {job.certified_at && <tr><th>Certified</th><td>{fmt(job.certified_at)}</td></tr>}
                 {job.delivered_at && <tr><th>Delivered</th><td>{fmt(job.delivered_at)}{job.delivered_to && job.delivered_to.length ? <><br /><span className="hint">to {job.delivered_to.join(", ")}</span></> : null}</td></tr>}
               </tbody></table>
             </section>
+            {isAdmin && (
+              <section className="card" style={{ marginTop: 18 }}>
+                <PaymentActions job={{ ref: job.ref, payment_status: job.payment_status, amount_cents: job.amount_cents, internal: Boolean(job.company && job.company.is_internal) }} />
+              </section>
+            )}
           </aside>
         </div>
 

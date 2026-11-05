@@ -73,7 +73,7 @@ export default async function ReviewQueue({ searchParams }) {
             </table>
           </div>
         )}
-        <p className="hint" style={{ marginTop: 10 }}>Jobs submitted before sign-in was added are still in the old <a href="/tracker">tracker</a> until records are moved into the database.</p>
+        {profile && profile.role === "admin" && <p className="hint" style={{ marginTop: 10 }}>Jobs submitted before sign-in was added are still in the old <a href="/tracker">tracker</a> until records are moved into the database.</p>}
       </div>
     </>
   );

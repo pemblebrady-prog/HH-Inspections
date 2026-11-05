@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import AppHeader from "../../AppHeader";
 
-const ROLE_LABEL = { admin: "Admin", company_owner: "Company owner", inspector: "Inspector" };
+import { ROLE_LABEL } from "../../../lib/roles";
+const STAFF = ["admin", "engineer"];
 const BLANK = { email: "", fullName: "", role: "inspector", companyId: "", newCompany: "" };
 
 export default function People() {
@@ -57,7 +58,7 @@ export default function People() {
       <div className="shell" style={{ maxWidth: 1080 }}>
         <section className="card">
           <h2>Invite someone</h2>
-          <p className="intro">They'll get an email with a link to sign in. Inspectors can submit jobs; company owners also see their company's jobs and billing; admins see everything.</p>
+          <p className="intro">They'll get an email with a link to sign in. Inspectors can submit jobs; company owners also see their company's jobs and billing; engineers review and certify jobs (no payments); admins see everything.</p>
           <form onSubmit={invite}>
             <div className="grid2">
               <div className="field"><label className="req" htmlFor="email">Email</label>
@@ -68,11 +69,12 @@ export default function People() {
                 <select id="role" value={form.role} onChange={set("role")}>
                   <option value="inspector">Inspector</option>
                   <option value="company_owner">Company owner</option>
+                  <option value="engineer">Engineer (reviews and certifies jobs)</option>
                   <option value="admin">Admin (House &amp; Home staff)</option>
                 </select></div>
-              <div className="field"><label htmlFor="companyId" className={form.role === "admin" ? "" : "req"}>Company</label>
+              <div className="field"><label htmlFor="companyId" className={STAFF.includes(form.role) ? "" : "req"}>Company</label>
                 <select id="companyId" value={form.companyId} onChange={set("companyId")}>
-                  <option value="">{form.role === "admin" ? "None" : "Choose a company"}</option>
+                  <option value="">{STAFF.includes(form.role) ? "None" : "Choose a company"}</option>
                   {companies.map((c) => <option key={c.id} value={c.id}>{c.name}{c.is_internal ? " (House & Home)" : ""}</option>)}
                   <option value="__new">+ New company…</option>
                 </select></div>

@@ -18,7 +18,7 @@ export default async function MyJobs() {
   if (!authEnabled) redirect("/");
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login?next=/jobs");
-  if (profile.role === "admin") redirect("/admin/review");
+  if (profile.role === "admin" || profile.role === "engineer") redirect("/admin/review");
   const owner = profile.role === "company_owner";
   const db = createAdminClient();
 

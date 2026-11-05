@@ -10,6 +10,6 @@ export default async function WelcomePage() {
   if (!authEnabled) redirect("/");
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login?next=/welcome");
-  if (profile.role === "admin" || profile.onboarded_at) redirect("/");
+  if (profile.role === "admin" || profile.role === "engineer" || profile.onboarded_at) redirect("/");
   return <Welcome profile={profile} />;
 }

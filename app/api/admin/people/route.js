@@ -5,7 +5,8 @@ import { invitePerson } from "../../../../lib/invite";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ROLES = ["admin", "company_owner", "inspector"];
+const ROLES = ["admin", "engineer", "company_owner", "inspector"];
+const NO_COMPANY = ["admin", "engineer"]; // House & Home staff
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 async function listAll(db) {
@@ -58,7 +59,7 @@ export async function POST(req) {
         companyId = created.id;
       }
     }
-    if (role !== "admin" && !companyId) {
+    if (!NO_COMPANY.includes(role) && !companyId) {
       return NextResponse.json({ ok: false, error: "Pick a company for inspectors and company owners." }, { status: 400 });
     }
 

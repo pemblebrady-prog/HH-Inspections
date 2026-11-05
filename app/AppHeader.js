@@ -5,7 +5,7 @@ import UserMenu from "./UserMenu";
 
 // Where the logo goes for each role.
 export function homeFor(profile) {
-  if (profile && profile.role === "admin") return "/admin/review";
+  if (profile && (profile.role === "admin" || profile.role === "engineer")) return "/admin/review";
   return "/";
 }
 
@@ -22,6 +22,7 @@ function navFor(profile, minimal) {
     { href: "/admin/companies", label: "Companies" },
     { href: "/tracker", label: "Old tracker" },
   ];
+  if (profile.role === "engineer") return [{ href: "/admin/review", label: "Review queue" }];
   if (profile.role === "company_owner") return [submit, { ...jobs, label: "Company jobs" }, { href: "/team", label: "My team" }, { href: "/billing", label: "Billing" }];
   return [submit, jobs];
 }

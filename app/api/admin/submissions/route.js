@@ -15,10 +15,10 @@ const MOVES = {
   cancel:  { status: "canceled" },
 };
 
-// Admins: change a job's status, save notes, or regenerate the draft letter.
+// Staff: change a job's status, save notes, or regenerate the draft letter.
 // Body: { ref, action: "start"|"certify"|"deliver"|"reopen"|"cancel"|"notes"|"letter", notes? }
 export async function PATCH(req) {
-  const auth = await requireUser(["admin"]);
+  const auth = await requireUser(["admin", "engineer"]);
   if (auth.error) return auth.error;
   const db = createAdminClient();
   if (!db) return NextResponse.json({ ok: false, error: "Database isn't configured." }, { status: 500 });
@@ -28,6 +28,9 @@ export async function PATCH(req) {
   const { data: sub, error } = await db.from("submissions").select("*, company:companies(name, is_internal, phone, email)").eq("ref", b.ref).maybeSingle();
   if (error || !sub) return NextResponse.json({ ok: false, error: "Job not found" }, { status: 404 });
   const me = auth.profile && auth.profile.id;
+  if (["charge", "waive"].includes(b.action) && auth.profile && auth.profile.role !== "admin") {
+    return NextResponse.json({ ok: false, error: "Only admins can change payments." }, { status: 403 });
+  }
   const now = new Date().toISOString();
 
   try {
