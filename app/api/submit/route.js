@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../lib/supabase/server";
+import { withEffectivePrice, getDefaultPriceCents } from "../../../lib/pricing";
 import { getDrive, rootFolderId, findOrCreateFolder, createUniqueFolder, appendSubmission } from "../../../lib/drive";
 
 export const runtime = "nodejs";
@@ -29,10 +30,10 @@ async function recordInDatabase({ profile, data, date, isDemo, folderId, driveLi
     let company = profile && profile.company ? profile.company : null;
     if (!company && data.inspectionCompany) {
       const { data: c } = await db.from("companies").select("id, name, is_internal, price_cents").eq("name", data.inspectionCompany).maybeSingle();
-      company = c || null;
+      company = c ? await withEffectivePrice(db, c) : null;
     }
     const internal = company ? company.is_internal : false;
-    const amount = company ? company.price_cents : Math.round(Number(process.env.NEXT_PUBLIC_CERT_FEE || 135) * 100);
+    const amount = company ? company.price_cents : await getDefaultPriceCents(db);
     const orderId = typeof data.orderId === "string" && /^[0-9a-f-]{36}$/i.test(data.orderId) ? data.orderId : null;
     const insertRow = {
       company_id: company ? company.id : null,
@@ -104,7 +105,8 @@ export async function POST(req) {
   const monthYear = monthYearFrom(date);
   const inspector = clean(data.inspectorName);
   const clientBase = `${clean(data.clientName)} - ${mmddyyyy(date)}`;
-  const amountPaid = Number(process.env.NEXT_PUBLIC_CERT_FEE || 135);
+  const co = auth.profile && auth.profile.company;
+  const amountPaid = (co && co.price_cents != null ? co.price_cents : await getDefaultPriceCents(dbx)) / 100; // old Drive tracker column
 
   const drive = getDrive();
   if (!drive) {

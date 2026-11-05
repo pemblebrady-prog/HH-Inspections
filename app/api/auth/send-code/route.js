@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "../../../../lib/supabase/server";
+import { createAdminClient, companyIsOff } from "../../../../lib/supabase/server";
 import { authEnabled } from "../../../../lib/supabase/config";
 import { withTimeout } from "../../../../lib/withTimeout";
 import { sendEmail } from "../../../../lib/email";
@@ -24,9 +24,12 @@ export async function POST(req) {
 
   try {
     // Only people who've been invited.
-    const { data: person } = await db.from("profiles").select("id, active, full_name").ilike("email", email).maybeSingle();
+    const { data: person } = await db.from("profiles").select("id, active, full_name, role, company_id").ilike("email", email).maybeSingle();
     if (!person || !person.active) {
       return NextResponse.json({ ok: false, code: "not_invited", error: "This email isn't set up for the portal yet. Ask House & Home to add you." }, { status: 400 });
+    }
+    if (person.role !== "admin" && (await companyIsOff(db, person.company_id))) {
+      return NextResponse.json({ ok: false, code: "company_off", error: "Your company's portal account is turned off. Call House & Home at 520-245-7897." }, { status: 403 });
     }
 
     const { data, error } = await withTimeout(

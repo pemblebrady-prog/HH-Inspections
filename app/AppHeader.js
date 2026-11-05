@@ -19,7 +19,7 @@ function navFor(profile, minimal) {
     submit,
     { href: "/admin/people", label: "People" },
     { href: "/admin/statements", label: "Statements" },
-    { href: "/companies", label: "Companies" },
+    { href: "/admin/companies", label: "Companies" },
     { href: "/tracker", label: "Old tracker" },
   ];
   if (profile.role === "company_owner") return [submit, { ...jobs, label: "Company jobs" }, { href: "/team", label: "My team" }, { href: "/billing", label: "Billing" }];
