@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import NearJobCheck from "./NearJobCheck";
 
 const when = (iso) => iso ? new Date(iso).toLocaleString("en-US", { timeZone: "America/Phoenix", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "Time not set";
 const yn = (b) => (b === true ? "Yes" : b === false ? "No" : "?");
@@ -17,6 +18,7 @@ export default function AssignedOrders({ form }) {
     const a = info.access || {};
     return (
       <div className="order-banner">
+        <NearJobCheck orderId={info.id} address={info.address} onPickAnother={form.leaveOrder} />
         <div><b>Order {info.ref}</b> · {info.detail} · {when(info.scheduledAt)}</div>
         <div className="hint">
           Dogs: {yn(a.dogs)} · Locked gates: {yn(a.lockedGates)} · Under-home locked: {yn(a.underHomeLocked)}

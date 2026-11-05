@@ -16,7 +16,7 @@ export async function GET(req) {
   if (!o || (me && me.role !== "admin" && o.inspector_id !== me.id)) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
   const a = o.access || {}, oc = o.occupant || {};
   return NextResponse.json({ ok: true, prefill: orderPrefill(o), info: {
-    ref: o.ref, address: o.property_address, detail: o.inspection_detail, scheduledAt: o.scheduled_at,
+    id: o.id, ref: o.ref, address: o.property_address, detail: o.inspection_detail, scheduledAt: o.scheduled_at,
     access: { dogs: a.dogs, lockedGates: a.lockedGates, underHomeLocked: a.underHomeLocked, lockboxCode: a.lockboxCode || "" },
     occupant: oc.occupied ? { name: oc.name, phone: oc.phone } : null, comments: o.comments || "",
   } });

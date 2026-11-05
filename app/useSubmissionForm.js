@@ -118,6 +118,13 @@ export function useSubmissionForm(profile) {
     return () => clearTimeout(t);
   }, [f, photos, sketch, resuming]);
 
+  // Leave this order's job (nothing entered yet) and go back to the list of assigned jobs.
+  async function leaveOrder() {
+    Object.values(photos).flat().concat(sketch).forEach((x) => deletePhoto(x.id));
+    await idbDel(DRAFT_KEY);
+    window.location.assign("/");
+  }
+
   async function startOver() {
     Object.values(photos).flat().concat(sketch).forEach((x) => deletePhoto(x.id));
     await idbDel(DRAFT_KEY);
@@ -209,5 +216,5 @@ export function useSubmissionForm(profile) {
 
   return { f, set, setVal, toggle, companies, sketch, addSketch, setSketch: clearSketch, photos, addTo, removeFrom,
     invalid, validate, totalPhotos, busy, progress, upload, result, payAndSubmit, demo, demoLoading, fillDemo, profile,
-    restoredAt, startOver, resuming, retryUpload, orderInfo };
+    restoredAt, startOver, leaveOrder, resuming, retryUpload, orderInfo };
 }
