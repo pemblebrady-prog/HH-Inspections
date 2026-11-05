@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import UserMenu from "./UserMenu";
+import { ViewAsBanner } from "./ViewAs";
 
 // Where the logo goes for each role.
 export function homeFor(profile) {
@@ -52,6 +53,7 @@ export default function AppHeader({ title, profile: given, right, wide, minimal 
 
   return (
     <>
+    <ViewAsBanner viewingAs={profile && profile.viewingAs} />
     <header>
       <div className="bar" style={wide ? { maxWidth: 1080 } : null}>
         {profile && (

@@ -25,6 +25,13 @@ export async function middleware(request) {
   const path = request.nextUrl.pathname;
   const isPublic = path === "/login" || path.startsWith("/auth/") || path.startsWith("/api/auth/") || path === "/api/health" || path === "/api/stripe/webhook" || path.startsWith("/api/cron/") || path.startsWith("/request/") || path === "/api/orders/intake" || path === "/request" || path === "/api/requests";
 
+  // "View as" preview: look, don't touch. Block every change except switching back and signing out.
+  const method = request.method;
+  if (user && request.cookies.get("hh_view_as")?.value && path.startsWith("/api/") && !["GET", "HEAD", "OPTIONS"].includes(method)
+      && path !== "/api/view-as" && !path.startsWith("/api/auth/")) {
+    return NextResponse.json({ ok: false, error: "You're previewing another role, so changes are turned off. Use \"Switch back\" at the top first." }, { status: 403 });
+  }
+
   if (!user && !isPublic) {
     if (path.startsWith("/api/")) {
       return NextResponse.json({ ok: false, error: "Please sign in." }, { status: 401 });

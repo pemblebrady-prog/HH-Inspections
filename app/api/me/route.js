@@ -12,5 +12,6 @@ export async function GET() {
   return NextResponse.json({ ok: true, profile: {
     id: p.id, email: p.email, full_name: p.full_name, role: p.role,
     company: p.company ? { name: p.company.name, is_internal: p.company.is_internal } : null,
+    viewingAs: p.viewingAs || null, realRole: p.realRole || p.role,
   } });
 }

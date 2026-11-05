@@ -4,5 +4,7 @@ import { authEnabled } from "../../../lib/supabase/config";
 
 export async function POST(request) {
   if (authEnabled) await createClient().auth.signOut();
-  return NextResponse.redirect(new URL("/login", request.url), { status: 303 });
+  const res = NextResponse.redirect(new URL("/login", request.url), { status: 303 });
+  res.cookies.set("hh_view_as", "", { path: "/", maxAge: 0 }); // end any "View as" preview
+  return res;
 }

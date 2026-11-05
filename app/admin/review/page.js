@@ -41,7 +41,8 @@ export default async function ReviewQueue({ searchParams }) {
   // PE details warnings: engineers see their own; admins see every engineer's.
   let issues = [];
   if (db && profile && profile.role === "engineer") {
-    const { data: meEng } = await db.from("profiles").select(ENGINEER_COLS).eq("id", profile.id).maybeSingle();
+    const { data: meEng } = profile.viewingAs ? { data: (await listEngineers(db))[0] || null }
+      : await db.from("profiles").select(ENGINEER_COLS).eq("id", profile.id).maybeSingle();
     if (meEng) issues = engineerIssues(meEng).map((t) => ({ t, href: "/admin/engineer" }));
   } else if (db && profile && profile.role === "admin") {
     const engs = await listEngineers(db);

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../../lib/supabase/server";
-import { ENGINEER_COLS } from "../../../../lib/engineers";
+import { ENGINEER_COLS, listEngineers } from "../../../../lib/engineers";
 import { getDrive, rootFolderId, uploadPrivateImage } from "../../../../lib/drive";
 
 export const runtime = "nodejs";
@@ -15,7 +15,8 @@ async function ctx(req) {
   if (!db) return { error: NextResponse.json({ ok: false, error: "Database isn't configured." }, { status: 500 }) };
   const me = auth.profile;
   const asked = new URL(req.url).searchParams.get("id");
-  const id = me && me.role === "admin" ? asked || me.id : me && me.id;
+  let id = me && me.role === "admin" ? asked || me.id : me && me.id;
+  if (me && me.viewingAs) { const [main] = await listEngineers(db); id = main ? main.id : id; } // admin previewing as engineer: show the main engineer
   if (!id) return { error: NextResponse.json({ ok: false, error: "No engineer selected." }, { status: 400 }) };
   const { data: person, error } = await db.from("profiles").select(ENGINEER_COLS).eq("id", id).maybeSingle();
   if (error) return { error: NextResponse.json({ ok: false, error: /pe_|stamp/i.test(error.message) ? "Run database update 0010 in Supabase first." : error.message }, { status: 500 }) };

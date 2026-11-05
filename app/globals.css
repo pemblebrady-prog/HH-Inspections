@@ -280,3 +280,12 @@ body:has(.wiz-nav) .install-sheet{bottom:calc(84px + env(safe-area-inset-bottom)
 .order-banner{max-width:820px;margin:10px auto 0;padding:12px 16px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--steel);border-radius:6px;font-size:14px;display:flex;flex-direction:column;gap:4px}
 .order-banner .month-list li{gap:12px}
 @media (max-width:719px){.order-banner{margin:8px 12px 0}}
+
+/* "View as" preview */
+.viewas-banner{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;
+  background:#7a3b10;color:#fff;padding:8px 16px;font-size:14px;text-align:center}
+.viewas-banner button{font:inherit;font-size:13px;font-weight:600;background:#fff;color:#7a3b10;border:0;border-radius:99px;padding:5px 12px;cursor:pointer}
+.um-viewas{display:flex;flex-direction:column;gap:8px;padding:8px 14px 12px}
+.um-viewas select{padding:7px 8px;border:1px solid var(--line);border-radius:6px;font:inherit;font-size:14px;background:#fff}
+.usermenu-panel .um-viewas button.btn{display:flex;justify-content:center;width:100%;padding:8px 12px;background:var(--stamp);color:#fff;border:1px solid var(--stamp);border-radius:6px;font-weight:600}
+.usermenu-panel .um-viewas button.btn:disabled{opacity:.45}

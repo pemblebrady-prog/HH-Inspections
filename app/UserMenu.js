@@ -1,4 +1,5 @@
 "use client";
+import { ViewAsPicker } from "./ViewAs";
 
 // Profile button (initials) with who you are and Sign out. Navigation lives in the ☰ menu.
 export default function UserMenu({ profile }) {
@@ -11,7 +12,8 @@ export default function UserMenu({ profile }) {
     <details className="usermenu">
       <summary aria-label="Account"><span className="avatar">{initials}</span><span className="caret">▾</span></summary>
       <div className="usermenu-panel">
-        <div className="um-who"><b>{name}</b><span>{profile.email}</span><span className="mono">{roleLabel}{profile.company && !profile.company.is_internal ? ` · ${profile.company.name}` : ""}</span></div>
+        <div className="um-who"><b>{name}</b><span>{profile.email}</span><span className="mono">{profile.viewingAs ? `Admin · previewing as ${roleLabel}` : roleLabel}{profile.company && !profile.company.is_internal ? ` · ${profile.company.name}` : ""}</span></div>
+        {(profile.role === "admin" || profile.realRole === "admin") && <ViewAsPicker current={profile.viewingAs || null} />}
         {profile.role === "company_owner" && <a href="/billing">Billing</a>}
         <form action="/auth/signout" method="post"><button type="submit">Sign out</button></form>
       </div>
