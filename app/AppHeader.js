@@ -20,6 +20,7 @@ function navFor(profile, minimal) {
     submit,
     { href: "/admin/people", label: "People" },
     { href: "/admin/statements", label: "Statements" },
+    { href: "/admin/reports", label: "Reports" },
     { href: "/admin/companies", label: "Companies" },
     { href: "/admin/engineer", label: "Engineers" },
     { href: "/tracker", label: "Old tracker" },
