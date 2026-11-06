@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, FEE } from "../lib/formConfig";
 import PhotoSlot from "./PhotoSlot";
+import TagFinding from "./TagFinding";
 import AppHeader from "./AppHeader";
 import UploadStatus from "./UploadStatus";
 import TopNotices from "./TopNotices";
@@ -124,7 +125,7 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
             <h2>Photos</h2>
             <p className="intro">Upload the pictures listed on the report. Every slot is optional, and you can add <b>as many photos as you need</b> to each one. Large photos are resized automatically. Use “Other pictures” for anything extra.</p>
             {PHOTO_SLOTS.map((slot) => (
-              <PhotoSlot key={slot.id} label={`${slot.n}. ${slot.label}`} items={photos[slot.id]} onAdd={addTo(slot.id)} onRemove={removeFrom(slot.id)} />
+              <PhotoSlot key={slot.id} label={`${slot.n}. ${slot.label}`} items={photos[slot.id]} onAdd={addTo(slot.id)} onRemove={removeFrom(slot.id)} checks={form.checks}>{slot.id === "p03" && <TagFinding find={form.tagFind} f={f} setVal={form.setVal} />}</PhotoSlot>
             ))}
             <div className="countbar" style={{ marginTop: 18 }}><span>{totalPhotos()} file{totalPhotos() === 1 ? "" : "s"} total (incl. sketch)</span><span /></div>
             <div className="actions">

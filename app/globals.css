@@ -319,3 +319,10 @@ body:has(.wiz-nav) .install-sheet{bottom:calc(84px + env(safe-area-inset-bottom)
 .report-totals span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .report-totals b{font-size:1.35rem}
 @media (max-width:720px){.report-totals{grid-template-columns:1fr 1fr}}
+/* Photo checks */
+.thumb.warn img{outline:3px solid #d9a441;outline-offset:-3px}
+.thumb-flag{position:absolute;left:4px;top:4px;width:20px;height:20px;border-radius:50%;background:#d9a441;color:#fff;font-weight:800;font-size:13px;display:grid;place-items:center}
+.photo-hints{margin:8px 0 0;padding:8px 12px 8px 26px;background:#f9eeda;border-radius:6px;font-size:.88rem;color:#6b4a12}
+.photo-hints li{margin:2px 0}
+.tag-find{margin-top:10px;padding:10px 12px;background:#e7f1fb;border-radius:6px;font-size:.9rem}
+.tag-find p{margin:4px 0}

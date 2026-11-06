@@ -4,6 +4,7 @@ import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, compress } from "../lib/formConfig
 import { DEMO_REPORT, isDemoUrl, loadDemoPhoto } from "../lib/demoData";
 import { idbGet, idbSet, idbDel, savePhoto, loadPhoto, deletePhoto, newId } from "../lib/offlineStore";
 import { runQueue, unfinishedQueues, queueKey } from "../lib/uploadQueue";
+import { photoQuality } from "../lib/photoQuality";
 
 const DRAFT_KEY = "draft";
 const emptyPhotos = () => Object.fromEntries(PHOTO_SLOTS.map((s) => [s.id, []]));
@@ -40,11 +41,42 @@ export function useSubmissionForm(profile) {
     await savePhoto(id, small);
     return { id, file: small, url: URL.createObjectURL(small) };
   }
+  // ---------- Photo checks (hints only, never a block) ----------
+  // checks[photoId] = { dark, blurry, checking, matches, shows, unusable }
+  const [checks, setChecks] = useState({});
+  const [tagFind, setTagFind] = useState(null); // { hudTags, dataPlate } read from a certification-tag photo
+  const setCheck = (id, v) => setChecks((c) => ({ ...c, [id]: { ...(c[id] || {}), ...v } }));
+  async function checkPhoto(item, slotId) {
+    const q = await photoQuality(item.file);
+    if (q) setCheck(item.id, { dark: q.dark, blurry: q.blurry });
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return; // no signal: skip the smart check
+    setCheck(item.id, { checking: true });
+    try {
+      const fd = new FormData(); fd.append("slot", slotId); fd.append("photo", item.file, "photo.jpg");
+      const d = await fetch("/api/photos/check", { method: "POST", body: fd }).then((r) => r.json());
+      if (!d.ok || d.off || !d.check) { setCheck(item.id, { checking: false }); return; }
+      const c = d.check;
+      setCheck(item.id, { checking: false, matches: c.matches, shows: c.shows, unusable: c.unusable });
+      if (slotId === "p03" && ((c.hudTags && c.hudTags.length) || c.dataPlate)) {
+        setTagFind((t) => ({
+          hudTags: [...new Set([...((t && t.hudTags) || []), ...(c.hudTags || [])])],
+          dataPlate: c.dataPlate || (t && t.dataPlate) || null,
+        }));
+        // Fill empty fields straight away; otherwise offer the photo's reading.
+        setF((s) => ({
+          ...s,
+          hudTagNumbers: s.hudTagNumbers || [...new Set(c.hudTags || [])].join(", "),
+          ageOfHome: s.ageOfHome || (c.dataPlate && c.dataPlate.yearBuilt) || "",
+        }));
+      }
+    } catch { setCheck(item.id, { checking: false }); }
+  }
   const addTo = (slotId) => async (list) => {
     const files = Array.from(list).filter((x) => x.type.startsWith("image/"));
     const next = [];
     for (const file of files) next.push(await prepare(file));
     setPhotos((p) => ({ ...p, [slotId]: [...p[slotId], ...next] }));
+    if (!demo) next.forEach((item) => { checkPhoto(item, slotId); });
   };
   const removeFrom = (slotId) => (i) => setPhotos((p) => {
     const gone = p[slotId][i]; if (gone) deletePhoto(gone.id);
@@ -216,5 +248,5 @@ export function useSubmissionForm(profile) {
 
   return { f, set, setVal, toggle, companies, sketch, addSketch, setSketch: clearSketch, photos, addTo, removeFrom,
     invalid, validate, totalPhotos, busy, progress, upload, result, payAndSubmit, demo, demoLoading, fillDemo, profile,
-    restoredAt, startOver, leaveOrder, resuming, retryUpload, orderInfo };
+    restoredAt, startOver, leaveOrder, resuming, retryUpload, orderInfo, checks, tagFind };
 }

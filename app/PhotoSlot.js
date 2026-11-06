@@ -1,7 +1,17 @@
 "use client";
 import { useRef } from "react";
 
-export default function PhotoSlot({ label, sub, items, onAdd, onRemove, max, big }) {
+// One gentle hint per photo, if any (from lib/photoQuality and the smart photo check).
+export function photoHint(c) {
+  if (!c) return "";
+  if (c.dark) return "Looks too dark. Retake with more light if you can.";
+  if (c.unusable) return `${c.unusable.replace(/\.$/, "")}. Retake if you can.`;
+  if (c.blurry) return "Looks blurry. Retake if you can.";
+  if (c.matches === false) return c.shows ? `This photo seems to show ${c.shows.charAt(0).toLowerCase() + c.shows.slice(1).replace(/\.$/, "")}. Is it in the right section?` : "This photo may not fit this section. Is it in the right place?";
+  return "";
+}
+
+export default function PhotoSlot({ label, sub, items, onAdd, onRemove, max, big, checks, children }) {
   const ref = useRef(null);
   const atMax = max && items.length >= max;
   return (
@@ -25,14 +35,25 @@ export default function PhotoSlot({ label, sub, items, onAdd, onRemove, max, big
         onChange={(e) => { onAdd(e.target.files); e.target.value = ""; }} />
       {items.length > 0 && (
         <div className="thumbs">
-          {items.map((p, i) => (
-            <div className="thumb" key={i}>
-              <img src={p.url} alt={label + " " + (i + 1)} />
-              <button aria-label="Remove" onClick={() => onRemove(i)}>×</button>
-            </div>
-          ))}
+          {items.map((p, i) => {
+            const hint = photoHint(checks && checks[p.id]);
+            return (
+              <div className={"thumb" + (hint ? " warn" : "")} key={i}>
+                <img src={p.url} alt={label + " " + (i + 1)} />
+                {hint && <span className="thumb-flag" aria-hidden="true">!</span>}
+                <button aria-label="Remove" onClick={() => onRemove(i)}>×</button>
+              </div>
+            );
+          })}
         </div>
       )}
+      {checks && items.some((p) => photoHint(checks[p.id])) && (
+        <ul className="photo-hints">
+          {items.map((p, i) => { const h = photoHint(checks[p.id]); return h ? <li key={p.id}><b>Photo {i + 1}:</b> {h}</li> : null; })}
+        </ul>
+      )}
+      {checks && items.some((p) => checks[p.id] && checks[p.id].checking) && <p className="hint" style={{ marginTop: 6 }}>Checking photos…</p>}
+      {children}
     </div>
   );
 }

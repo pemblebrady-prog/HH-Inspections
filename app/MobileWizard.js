@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, FEE } from "../lib/formConfig";
 import PhotoSlot from "./PhotoSlot";
+import TagFinding from "./TagFinding";
 import AppHeader from "./AppHeader";
 import UploadStatus from "./UploadStatus";
 import TopNotices from "./TopNotices";
@@ -85,7 +86,7 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
   const photoScreens = PHOTO_SLOTS.map((slot) => ({
     title: `Photo ${slot.n} of ${PHOTO_SLOTS.length}`,
     render: () => (<>
-      <PhotoSlot big label={slot.label} sub="Add as many as you need. Optional — skip if it doesn't apply." items={photos[slot.id]} onAdd={addTo(slot.id)} onRemove={removeFrom(slot.id)} />
+      <PhotoSlot big label={slot.label} sub="Add as many as you need. Optional — skip if it doesn't apply." items={photos[slot.id]} onAdd={addTo(slot.id)} onRemove={removeFrom(slot.id)} checks={form.checks}>{slot.id === "p03" && <TagFinding find={form.tagFind} f={f} setVal={form.setVal} />}</PhotoSlot>
     </>),
   }));
 
