@@ -5,6 +5,7 @@ import { DEMO_REPORT, isDemoUrl, loadDemoPhoto } from "../lib/demoData";
 import { idbGet, idbSet, idbDel, savePhoto, loadPhoto, deletePhoto, newId } from "../lib/offlineStore";
 import { runQueue, unfinishedQueues, queueKey } from "../lib/uploadQueue";
 import { photoQuality } from "../lib/photoQuality";
+import { sendAhead, cancelAhead, markKnown, onEarlyChange } from "../lib/earlyUpload";
 
 const DRAFT_KEY = "draft";
 const emptyPhotos = () => Object.fromEntries(PHOTO_SLOTS.map((s) => [s.id, []]));
@@ -76,19 +77,25 @@ export function useSubmissionForm(profile) {
     const next = [];
     for (const file of files) next.push(await prepare(file));
     setPhotos((p) => ({ ...p, [slotId]: [...p[slotId], ...next] }));
-    if (!demo) next.forEach((item) => { checkPhoto(item, slotId); });
+    if (!demo) next.forEach((item) => { checkPhoto(item, slotId); sendAhead(item.id); });
   };
   const removeFrom = (slotId) => (i) => setPhotos((p) => {
-    const gone = p[slotId][i]; if (gone) deletePhoto(gone.id);
+    const gone = p[slotId][i]; if (gone) { deletePhoto(gone.id); cancelAhead(gone.id); }
     return { ...p, [slotId]: p[slotId].filter((_, idx) => idx !== i) };
   });
   const addSketch = async (list) => {
     const one = Array.from(list).find((x) => x.type.startsWith("image/"));
     if (!one) return;
-    sketch.forEach((s) => deletePhoto(s.id));
-    setSketch([await prepare(one)]);
+    sketch.forEach((s) => { deletePhoto(s.id); cancelAhead(s.id); });
+    const item = await prepare(one);
+    setSketch([item]);
+    if (!demo) sendAhead(item.id);
   };
-  const clearSketch = () => { sketch.forEach((s) => deletePhoto(s.id)); setSketch([]); };
+  const clearSketch = () => { sketch.forEach((s) => { deletePhoto(s.id); cancelAhead(s.id); }); setSketch([]); };
+
+  // Which photos already went ahead (for the little check marks).
+  const [sentAhead, setSentAhead] = useState(() => new Set());
+  useEffect(() => onEarlyChange((st) => setSentAhead(st.sent)), []);
 
   // ---------- Draft: autosave and restore ----------
   const loaded = useRef(false);
@@ -132,6 +139,9 @@ export function useSubmissionForm(profile) {
         const hasContent = (d.f.propertyAddress || d.f.clientName) || sk.length || Object.values(p).some((a) => a.length);
         if (hasContent) {
           setF((cur) => ({ ...cur, ...d.f })); setPhotos(p); setSketch(sk); setRestoredAt(d.savedAt || Date.now());
+          // Keep sending ahead anything that didn't make it before the app closed.
+          const ids = [...Object.values(p).flat(), ...sk].map((x) => x.id);
+          markKnown(ids).then(() => ids.forEach((id) => sendAhead(id)));
         }
       }
       loaded.current = true;
@@ -152,13 +162,13 @@ export function useSubmissionForm(profile) {
 
   // Leave this order's job (nothing entered yet) and go back to the list of assigned jobs.
   async function leaveOrder() {
-    Object.values(photos).flat().concat(sketch).forEach((x) => deletePhoto(x.id));
+    Object.values(photos).flat().concat(sketch).forEach((x) => { deletePhoto(x.id); cancelAhead(x.id); });
     await idbDel(DRAFT_KEY);
     window.location.assign("/");
   }
 
   async function startOver() {
-    Object.values(photos).flat().concat(sketch).forEach((x) => deletePhoto(x.id));
+    Object.values(photos).flat().concat(sketch).forEach((x) => { deletePhoto(x.id); cancelAhead(x.id); });
     await idbDel(DRAFT_KEY);
     window.location.reload();
   }
@@ -248,5 +258,5 @@ export function useSubmissionForm(profile) {
 
   return { f, set, setVal, toggle, companies, sketch, addSketch, setSketch: clearSketch, photos, addTo, removeFrom,
     invalid, validate, totalPhotos, busy, progress, upload, result, payAndSubmit, demo, demoLoading, fillDemo, profile,
-    restoredAt, startOver, leaveOrder, resuming, retryUpload, orderInfo, checks, tagFind };
+    restoredAt, startOver, leaveOrder, resuming, retryUpload, orderInfo, checks, tagFind, sentAhead };
 }

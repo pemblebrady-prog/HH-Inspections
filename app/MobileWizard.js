@@ -77,7 +77,7 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
     {
       title: "Home sketch & comments",
       render: () => (<>
-        <PhotoSlot big label="Home sketch" sub="Draw it on paper or a tablet, then upload a photo of it." items={sketch} onAdd={addSketch} onRemove={() => setSketch([])} max={1} />
+        <PhotoSlot big label="Home sketch" sub="Draw it on paper or a tablet, then upload a photo of it." items={sketch} onAdd={addSketch} onRemove={() => setSketch([])} max={1} sent={form.sentAhead} />
         <div className="field" style={{ marginTop: 16 }}><label htmlFor="generalComments">General comments</label><textarea id="generalComments" value={f.generalComments} onChange={set("generalComments")} /></div>
       </>),
     },
@@ -86,7 +86,7 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
   const photoScreens = PHOTO_SLOTS.map((slot) => ({
     title: `Photo ${slot.n} of ${PHOTO_SLOTS.length}`,
     render: () => (<>
-      <PhotoSlot big label={slot.label} sub="Add as many as you need. Optional — skip if it doesn't apply." items={photos[slot.id]} onAdd={addTo(slot.id)} onRemove={removeFrom(slot.id)} checks={form.checks}>{slot.id === "p03" && <TagFinding find={form.tagFind} f={f} setVal={form.setVal} />}</PhotoSlot>
+      <PhotoSlot big label={slot.label} sub="Add as many as you need. Optional — skip if it doesn't apply." items={photos[slot.id]} onAdd={addTo(slot.id)} onRemove={removeFrom(slot.id)} checks={form.checks} sent={form.sentAhead}>{slot.id === "p03" && <TagFinding find={form.tagFind} f={f} setVal={form.setVal} />}</PhotoSlot>
     </>),
   }));
 
@@ -130,6 +130,9 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
         <div className="wiz-fields">{cur.render()}</div>
       </div>
 
+      {cur.isReview && !busy && totalPhotos() > 0 && form.sentAhead && form.sentAhead.size > 0 && (
+        <p className="hint" style={{ margin: "0 16px 8px", textAlign: "center" }}>{Math.min(form.sentAhead.size, totalPhotos())} of {totalPhotos()} photos already sent ahead, so submitting will be quicker.</p>
+      )}
       <div className="wiz-nav">
         <button className="btn ghost" onClick={() => setI(Math.max(0, i - 1))} disabled={i === 0 || busy}>Back</button>
         {cur.isReview

@@ -11,7 +11,7 @@ export function photoHint(c) {
   return "";
 }
 
-export default function PhotoSlot({ label, sub, items, onAdd, onRemove, max, big, checks, children }) {
+export default function PhotoSlot({ label, sub, items, onAdd, onRemove, max, big, checks, sent, children }) {
   const ref = useRef(null);
   const atMax = max && items.length >= max;
   return (
@@ -41,6 +41,7 @@ export default function PhotoSlot({ label, sub, items, onAdd, onRemove, max, big
               <div className={"thumb" + (hint ? " warn" : "")} key={i}>
                 <img src={p.url} alt={label + " " + (i + 1)} />
                 {hint && <span className="thumb-flag" aria-hidden="true">!</span>}
+                {sent && sent.has(p.id) && <span className="thumb-sent" title="Already sent">✓</span>}
                 <button aria-label="Remove" onClick={() => onRemove(i)}>×</button>
               </div>
             );

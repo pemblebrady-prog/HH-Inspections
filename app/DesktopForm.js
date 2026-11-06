@@ -112,7 +112,7 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
 
             <fieldset>
               <legend>Sketch &amp; comments</legend>
-              <PhotoSlot label="Home sketch (image upload)" sub="Draw the home sketch on paper or a tablet, then upload a photo of it here." items={sketch} onAdd={addSketch} onRemove={() => setSketch([])} max={1} />
+              <PhotoSlot label="Home sketch (image upload)" sub="Draw the home sketch on paper or a tablet, then upload a photo of it here." items={sketch} onAdd={addSketch} onRemove={() => setSketch([])} max={1} sent={form.sentAhead} />
               <div className="field" style={{ marginTop: 16 }}><label htmlFor="generalComments">General comments</label><textarea id="generalComments" value={f.generalComments} onChange={set("generalComments")} /></div>
             </fieldset>
 
@@ -125,7 +125,7 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
             <h2>Photos</h2>
             <p className="intro">Upload the pictures listed on the report. Every slot is optional, and you can add <b>as many photos as you need</b> to each one. Large photos are resized automatically. Use “Other pictures” for anything extra.</p>
             {PHOTO_SLOTS.map((slot) => (
-              <PhotoSlot key={slot.id} label={`${slot.n}. ${slot.label}`} items={photos[slot.id]} onAdd={addTo(slot.id)} onRemove={removeFrom(slot.id)} checks={form.checks}>{slot.id === "p03" && <TagFinding find={form.tagFind} f={f} setVal={form.setVal} />}</PhotoSlot>
+              <PhotoSlot key={slot.id} label={`${slot.n}. ${slot.label}`} items={photos[slot.id]} onAdd={addTo(slot.id)} onRemove={removeFrom(slot.id)} checks={form.checks} sent={form.sentAhead}>{slot.id === "p03" && <TagFinding find={form.tagFind} f={f} setVal={form.setVal} />}</PhotoSlot>
             ))}
             <div className="countbar" style={{ marginTop: 18 }}><span>{totalPhotos()} file{totalPhotos() === 1 ? "" : "s"} total (incl. sketch)</span><span /></div>
             <div className="actions">
@@ -153,6 +153,7 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
             <UploadStatus form={form} />
             <div className="actions">
               <button className="btn ghost" onClick={() => setStep(2)} disabled={busy}>← Back</button>
+              {!busy && totalPhotos() > 0 && form.sentAhead && form.sentAhead.size > 0 && <p className="hint" style={{ margin: "0 0 8px" }}>{Math.min(form.sentAhead.size, totalPhotos())} of {totalPhotos()} photos already sent ahead, so submitting will be quicker.</p>}
               <button className="btn" onClick={payAndSubmit} disabled={busy}>{busy ? `Uploading… ${progress}%` : "Submit for certification"}</button>
             </div>
           </section>
