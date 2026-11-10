@@ -132,7 +132,7 @@ function KeyColumn({ x, H, t }) {
   );
 }
 
-export default function SketchBuilder({ f, initial, onSave, onClose }) {
+export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
   const [data, setData] = useState(() => ({ ...BLANK, ...(initial || {}) }));
   const [hist, setHist] = useState([]);
   const [sel, setSel] = useState(null);
@@ -265,6 +265,16 @@ export default function SketchBuilder({ f, initial, onSave, onClose }) {
                 </button>
               ))}
             </div>
+            {onHome && (
+              <div className="sk-row sk-home">
+                <span className="sk-lbl">Home</span>
+                {[["Single-Wide", "Single"], ["Double-Wide", "Double"], ["Triple-Wide", "Triple"]].map(([v, l]) => (
+                  <button key={v} type="button" className={"chip" + (f.homeType === v ? " on" : "")} onClick={() => onHome({ homeType: v })}>{l}</button>
+                ))}
+                <label>Length (ft)<input inputMode="decimal" value={f.lengthFt || ""} placeholder={String((TYPICAL[kind(f.homeType)] || [64])[0])} onChange={(e) => onHome({ lengthFt: e.target.value.replace(/[^\d.]/g, "").slice(0, 5) })} /></label>
+                <label>Width (ft)<input inputMode="decimal" value={f.widthFt || ""} placeholder={String((TYPICAL[kind(f.homeType)] || [0, 28])[1])} onChange={(e) => onHome({ widthFt: e.target.value.replace(/[^\d.]/g, "").slice(0, 5) })} /></label>
+              </div>
+            )}
             <div className="sk-row">
               <button type="button" className="btn ghost sk-small" onClick={addStructure}>+ Porch / addition</button>
               <button type="button" className="btn ghost sk-small" onClick={() => commit({ ...data, north: ((data.north || 0) + 315) % 360 })} aria-label="Rotate north left">↺ N</button>

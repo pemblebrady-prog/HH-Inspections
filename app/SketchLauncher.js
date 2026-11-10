@@ -16,6 +16,7 @@ export default function SketchLauncher({ form }) {
       </div>
       {open && (
         <SketchBuilder f={f} initial={f.sketchData || null} onClose={() => setOpen(false)}
+          onHome={(patch) => Object.entries(patch).forEach(([k, v]) => setVal(k, v))}
           onSave={async (file, data) => { await addSketch([file]); setVal("sketchData", data); setOpen(false); }} />
       )}
     </>
