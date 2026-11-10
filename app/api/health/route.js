@@ -21,6 +21,7 @@ export async function GET() {
       STRIPE_WEBHOOK_SECRET: has("STRIPE_WEBHOOK_SECRET"),
       EMAIL_FROM: has("EMAIL_FROM"),
       ANTHROPIC_API_KEY: has("ANTHROPIC_API_KEY"),
+      GMAIL_CONNECTED: Boolean(await import("../../../lib/gmail").then((m) => m.getGmailSender()).catch(() => null)),
       GF_SITE_URL: has("GF_SITE_URL"),
       GF_CONSUMER_KEY: has("GF_CONSUMER_KEY"),
       GF_CONSUMER_SECRET: has("GF_CONSUMER_SECRET"),
