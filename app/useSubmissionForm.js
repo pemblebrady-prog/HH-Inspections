@@ -36,8 +36,8 @@ export function useSubmissionForm(profile) {
   // Photos: each is { id, file, url }. Shrunk on the phone and saved locally as soon as it's added.
   const [sketch, setSketch] = useState([]);
   const [photos, setPhotos] = useState(emptyPhotos);
-  async function prepare(file) {
-    const small = await compress(file);
+  async function prepare(file, quality) {
+    const small = await compress(file, 1800, quality);
     const id = newId();
     await savePhoto(id, small);
     return { id, file: small, url: URL.createObjectURL(small) };
@@ -87,7 +87,7 @@ export function useSubmissionForm(profile) {
     const one = Array.from(list).find((x) => x.type.startsWith("image/"));
     if (!one) return;
     sketch.forEach((s) => { deletePhoto(s.id); cancelAhead(s.id); });
-    const item = await prepare(one);
+    const item = await prepare(one, 0.92); // line drawings stay crisp
     setSketch([item]);
     if (!demo) sendAhead(item.id);
   };
