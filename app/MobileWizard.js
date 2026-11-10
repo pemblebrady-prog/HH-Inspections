@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, FEE } from "../lib/formConfig";
 import PhotoSlot from "./PhotoSlot";
 import TagFinding from "./TagFinding";
+import SketchLauncher from "./SketchLauncher";
 import AppHeader from "./AppHeader";
 import UploadStatus from "./UploadStatus";
 import TopNotices from "./TopNotices";
@@ -77,7 +78,8 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
     {
       title: "Home sketch & comments",
       render: () => (<>
-        <PhotoSlot big label="Home sketch" sub="Draw it on paper or a tablet, then upload a photo of it." items={sketch} onAdd={addSketch} onRemove={() => setSketch([])} max={1} sent={form.sentAhead} />
+        <SketchLauncher form={form} />
+        <PhotoSlot big label="Home sketch" sub="Your drawing appears here once saved, or upload a photo of a hand drawing." items={sketch} onAdd={addSketch} onRemove={() => setSketch([])} max={1} sent={form.sentAhead} />
         <div className="field" style={{ marginTop: 16 }}><label htmlFor="generalComments">General comments</label><textarea id="generalComments" value={f.generalComments} onChange={set("generalComments")} /></div>
       </>),
     },

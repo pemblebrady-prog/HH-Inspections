@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, FEE } from "../lib/formConfig";
 import PhotoSlot from "./PhotoSlot";
 import TagFinding from "./TagFinding";
+import SketchLauncher from "./SketchLauncher";
 import AppHeader from "./AppHeader";
 import UploadStatus from "./UploadStatus";
 import TopNotices from "./TopNotices";
@@ -112,7 +113,8 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
 
             <fieldset>
               <legend>Sketch &amp; comments</legend>
-              <PhotoSlot label="Home sketch (image upload)" sub="Draw the home sketch on paper or a tablet, then upload a photo of it here." items={sketch} onAdd={addSketch} onRemove={() => setSketch([])} max={1} sent={form.sentAhead} />
+              <SketchLauncher form={form} />
+              <PhotoSlot label="Home sketch" sub="Your drawing appears here once saved. You can also upload a photo of a hand-drawn sketch." items={sketch} onAdd={addSketch} onRemove={() => setSketch([])} max={1} sent={form.sentAhead} />
               <div className="field" style={{ marginTop: 16 }}><label htmlFor="generalComments">General comments</label><textarea id="generalComments" value={f.generalComments} onChange={set("generalComments")} /></div>
             </fieldset>
 
