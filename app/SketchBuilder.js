@@ -16,11 +16,16 @@ const SIDES = [["top", "Top"], ["bottom", "Bottom"], ["left", "Left"], ["right",
 const num = (v, d) => { const n = parseFloat(String(v || "").replace(/[^\d.]/g, "")); return Number.isFinite(n) && n > 0 ? n : d; };
 const ft = (n) => `${Math.round(n * 10) / 10}'`;
 const uid = () => Math.random().toString(36).slice(2, 9);
+// Typical sizes by home type, used until the real length and width are entered.
+export const TYPICAL = { single: [76, 16], double: [60, 28], triple: [60, 42] };
+const kind = (homeType) => (/triple/i.test(homeType || "") ? "triple" : /double/i.test(homeType || "") ? "double" : /single/i.test(homeType || "") ? "single" : "");
+const typeLabel = (homeType) => ({ single: "SINGLE-WIDE", double: "DOUBLE-WIDE", triple: "TRIPLE-WIDE" }[kind(homeType)] || "MANUFACTURED HOME");
 const BLANK = { structures: [], tags: [], north: 0, street: { name: "", side: "right" } };
 
 // World layout (all in feet).
 function layout(f, data) {
-  const L = Math.min(num(f.lengthFt, 64), 200), Wd = Math.min(num(f.widthFt, 28), 80);
+  const [dl, dw] = TYPICAL[kind(f.homeType)] || [64, 28];
+  const L = Math.min(num(f.lengthFt, dl), 200), Wd = Math.min(num(f.widthFt, dw), 80);
   const reach = Math.max(10, ...data.structures.map((s) => s.depth + 4));
   const W = Math.max(84, L + 2 * reach + 26);
   const H = Math.max(Wd + 2 * reach + 22, W * 0.62);
@@ -69,7 +74,7 @@ function Drawing({ f, data, lay, selected, forExport, onDown }) {
       {/* Home */}
       <rect x={home.x} y={home.y} width={home.w} height={home.h} fill={FILL} stroke={INK} strokeWidth="0.45" />
       {Array.from({ length: sections - 1 }, (_, i) => <line key={i} x1={home.x} y1={home.y + (home.h * (i + 1)) / sections} x2={home.x + home.w} y2={home.y + (home.h * (i + 1)) / sections} stroke={INK} strokeWidth="0.3" strokeDasharray="1.5 1.2" />)}
-      <text x={home.x + home.w / 2} y={home.y + home.h / 2} fontSize={Math.min(fs, home.w / 14, home.h * 0.22)} fontFamily="Arial, sans-serif" fill={INK} opacity="0.7" textAnchor="middle" dominantBaseline="central">MANUFACTURED HOME</text>
+      <text x={home.x + home.w / 2} y={home.y + home.h / 2} fontSize={Math.min(fs, home.w / 14, home.h * 0.22)} fontFamily="Arial, sans-serif" fill={INK} opacity="0.7" textAnchor="middle" dominantBaseline="central">{typeLabel(f.homeType)}</text>
       <text x={home.x + home.w / 2} y={home.y + dimFs * 1.15} fontSize={dimFs} fontFamily="Arial, sans-serif" fill={INK} textAnchor="middle">{ft(home.w)}</text>
       <text x={home.x + dimFs * 0.45} y={home.y + home.h / 2} fontSize={dimFs} fontFamily="Arial, sans-serif" fill={INK} dominantBaseline="central">{ft(home.h)}</text>
 
@@ -220,7 +225,7 @@ export default function SketchBuilder({ f, initial, onSave, onClose }) {
         <b>Home sketch</b>
         <button type="button" className="btn" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save sketch"}</button>
       </div>
-      {!f.lengthFt || !f.widthFt ? <p className="sk-note">Tip: enter the home's length and width in Home basics so it's drawn to size (using 64' × 28' for now).</p> : null}
+      {!f.lengthFt || !f.widthFt ? <p className="sk-note">Tip: enter the home's length and width in Home basics so it's drawn to size (using a typical {(TYPICAL[kind(f.homeType)] || [64, 28]).join("' × ")}' {kind(f.homeType) ? kind(f.homeType) + "-wide" : "home"} for now).</p> : null}
 
       <div className="sk-canvas">
         <svg ref={svgRef} viewBox={`0 0 ${lay.W} ${lay.H}`} preserveAspectRatio="xMidYMid meet" onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
