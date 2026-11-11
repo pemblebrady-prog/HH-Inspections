@@ -12,6 +12,19 @@ export const TAGS = [
   ["N", "No Access", "r"], ["V", "Vents", "r"],
 ];
 const INK = "#1d2a33", RED = "#b3261e", FILL = "#cfe0ea", FILL2 = "#dfeaf0";
+// Attached structures: [type, typical starting size as [along the home, out from the home] in feet, quick sizes].
+export const STRUCTURES = [
+  ["Porch", [8, 6], [[6, 4], [8, 6], [10, 8], [12, 8]]],
+  ["Covered porch", [20, 8], [[12, 8], [20, 8], [24, 10], [30, 10]]],
+  ["Deck", [12, 10], [[8, 8], [12, 10], [16, 12], [20, 12]]],
+  ["Steps", [4, 4], [[3, 3], [4, 4], [4, 6], [6, 4]]],
+  ["Ramp", [16, 4], [[12, 4], [16, 4], [20, 4], [24, 5]]],
+  ["Carport", [20, 12], [[18, 10], [20, 12], [20, 20], [24, 24]]],
+  ["Awning", [20, 8], [[12, 8], [20, 8], [30, 10], [40, 10]]],
+  ["Addition", [12, 12], [[10, 10], [12, 12], [16, 12], [20, 14]]],
+  ["Garage", [24, 24], [[12, 20], [20, 20], [24, 24], [24, 30]]],
+  ["Other", [10, 8], [[8, 8], [10, 8], [12, 10], [16, 12]]],
+];
 const SIDES = [["top", "Top"], ["bottom", "Bottom"], ["left", "Left"], ["right", "Right"]];
 const num = (v, d) => { const n = parseFloat(String(v || "").replace(/[^\d.]/g, "")); return Number.isFinite(n) && n > 0 ? n : d; };
 const ft = (n) => `${Math.round(n * 10) / 10}'`;
@@ -74,9 +87,9 @@ function Drawing({ f, data, lay, selected, forExport, onDown }) {
       {/* Home */}
       <rect x={home.x} y={home.y} width={home.w} height={home.h} fill={FILL} stroke={INK} strokeWidth="0.45" />
       {Array.from({ length: sections - 1 }, (_, i) => <line key={i} x1={home.x} y1={home.y + (home.h * (i + 1)) / sections} x2={home.x + home.w} y2={home.y + (home.h * (i + 1)) / sections} stroke={INK} strokeWidth="0.3" strokeDasharray="1.5 1.2" />)}
-      <text x={home.x + home.w / 2} y={home.y + home.h / 2} fontSize={Math.min(fs, home.w / 14, home.h * 0.22)} fontFamily="Arial, sans-serif" fill={INK} opacity="0.7" textAnchor="middle" dominantBaseline="central">{typeLabel(f.homeType)}</text>
+      <text x={home.x + home.w / 2} y={home.y + home.h / (sections > 1 ? 2 * sections : 2)} fontSize={Math.min(fs, home.w / 14, (home.h / sections) * 0.4)} fontFamily="Arial, sans-serif" fill={INK} opacity="0.7" textAnchor="middle" dominantBaseline="central">{typeLabel(f.homeType)}</text>
       <text x={home.x + home.w / 2} y={home.y + dimFs * 1.15} fontSize={dimFs} fontFamily="Arial, sans-serif" fill={INK} textAnchor="middle">{ft(home.w)}</text>
-      <text x={home.x + dimFs * 0.45} y={home.y + home.h / 2} fontSize={dimFs} fontFamily="Arial, sans-serif" fill={INK} dominantBaseline="central">{ft(home.h)}</text>
+      <text x={home.x + dimFs * 0.45} y={home.y + (sections > 1 ? home.h - home.h / (2 * sections) : home.h / 2)} fontSize={dimFs} fontFamily="Arial, sans-serif" fill={INK} dominantBaseline="central">{ft(home.h)}</text>
 
       {/* Attached structures */}
       {data.structures.map((s) => {
@@ -185,11 +198,14 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
     if (g.y < lay.tag) g.y = lay.home.y + lay.home.h / 2;
     commit({ ...data, tags: [...data.tags, g] }); setSel(g.id);
   }
-  function addStructure() {
+  const [picking, setPicking] = useState(false);
+  function addStructure(type) {
+    const def = STRUCTURES.find((x) => x[0] === type) || STRUCTURES[STRUCTURES.length - 1];
     const used = new Set(data.structures.map((s) => s.side));
     const side = ["bottom", "top", "left", "right"].find((x) => !used.has(x)) || "bottom";
-    const s = { id: uid(), side, along: Math.min(24, Math.round(sideLen(lay.home, side) * 0.4)), depth: 8, offset: 4, label: "Porch" };
-    commit({ ...data, structures: [...data.structures, s] }); setSel(s.id);
+    const along = Math.min(def[1][0], sideLen(lay.home, side));
+    const s = { id: uid(), type: def[0], side, along, depth: def[1][1], offset: Math.max(0, Math.round((sideLen(lay.home, side) - along) / 2)), label: def[0] };
+    commit({ ...data, structures: [...data.structures, s] }); setSel(s.id); setPicking(false);
   }
   const selStruct = data.structures.find((s) => s.id === sel);
   const selTag = data.tags.find((g) => g.id === sel);
@@ -238,7 +254,13 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
         {selStruct ? (
           <div className="sk-edit">
             <div className="sk-row">
-              <label>Name<input value={selStruct.label} onChange={(e) => editStruct({ label: e.target.value.slice(0, 24) })} /></label>
+              <span className="sk-lbl">{selStruct.type || selStruct.label}</span>
+              {(STRUCTURES.find((x) => x[0] === (selStruct.type || selStruct.label)) || STRUCTURES[STRUCTURES.length - 1])[2].map(([a, d]) => (
+                <button key={`${a}x${d}`} type="button" className={"chip" + (selStruct.along === a && selStruct.depth === d ? " on" : "")} onClick={() => editStruct({ along: a, depth: d })}>{a}' × {d}'</button>
+              ))}
+            </div>
+            <div className="sk-row">
+              <label>Name on sketch<input value={selStruct.label} onChange={(e) => editStruct({ label: e.target.value.slice(0, 24) })} /></label>
               <label>Along the home (ft)<input inputMode="decimal" value={selStruct.along} onChange={(e) => editStruct({ along: Math.min(200, num(e.target.value, 1)) })} /></label>
               <label>Out from the home (ft)<input inputMode="decimal" value={selStruct.depth} onChange={(e) => editStruct({ depth: Math.min(60, num(e.target.value, 1)) })} /></label>
             </div>
@@ -249,6 +271,21 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
               <button type="button" className="sk-link" onClick={() => setSel(null)}>Done</button>
             </div>
             <p className="sk-hint">Drag the box along the side of the home to position it.</p>
+          </div>
+        ) : picking ? (
+          <div>
+            <div className="sk-row" style={{ justifyContent: "space-between" }}>
+              <span className="sk-lbl">What's attached to the home?</span>
+              <button type="button" className="sk-link" onClick={() => setPicking(false)}>Cancel</button>
+            </div>
+            <div className="sk-types">
+              {STRUCTURES.map(([type, [a, d]]) => (
+                <button key={type} type="button" className="sk-type" onClick={() => addStructure(type)}>
+                  <b>{type}</b><span>{type === "Other" ? "Any size" : `typ. ${a}' × ${d}'`}</span>
+                </button>
+              ))}
+            </div>
+            <p className="sk-hint">Pick one, then choose a size or type the exact measurements.</p>
           </div>
         ) : selTag ? (
           <div className="sk-row">
@@ -276,7 +313,7 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
               </div>
             )}
             <div className="sk-row">
-              <button type="button" className="btn ghost sk-small" onClick={addStructure}>+ Porch / addition</button>
+              <button type="button" className="btn ghost sk-small" onClick={() => { setSel(null); setPicking(true); }}>+ Add structure</button>
               <button type="button" className="btn ghost sk-small" onClick={() => commit({ ...data, north: ((data.north || 0) + 315) % 360 })} aria-label="Rotate north left">↺ N</button>
               <button type="button" className="btn ghost sk-small" onClick={() => commit({ ...data, north: ((data.north || 0) + 45) % 360 })} aria-label="Rotate north right">N ↻</button>
               <button type="button" className="btn ghost sk-small" onClick={undo} disabled={!hist.length}>Undo</button>
