@@ -352,3 +352,7 @@ body:has(.wiz-nav) .install-sheet{bottom:calc(84px + env(safe-area-inset-bottom)
 .sk-hint{font-size:12px;color:var(--muted);margin:2px 0 0}
 .sk-home .chip{padding:7px 12px}
 .sk-home label input{width:84px;min-width:0}
+.legal h2{font-size:1.1rem;margin:22px 0 8px}
+.legal p,.legal li{line-height:1.55}
+.legal ul{padding-left:20px;margin:0 0 10px}
+.legal li{margin:4px 0}

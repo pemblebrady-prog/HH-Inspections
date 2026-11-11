@@ -23,7 +23,7 @@ export async function middleware(request) {
 
   const { data: { user } } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
-  const isPublic = path === "/login" || path.startsWith("/auth/") || path.startsWith("/api/auth/") || path === "/api/health" || path === "/api/stripe/webhook" || path.startsWith("/api/cron/") || path.startsWith("/request/") || path === "/api/orders/intake" || path === "/request" || path === "/api/requests";
+  const isPublic = path === "/login" || path === "/privacy" || path === "/terms" || path.startsWith("/auth/") || path.startsWith("/api/auth/") || path === "/api/health" || path === "/api/stripe/webhook" || path.startsWith("/api/cron/") || path.startsWith("/request/") || path === "/api/orders/intake" || path === "/request" || path === "/api/requests";
 
   // "View as" preview: look, don't touch. Block every change except switching back and signing out.
   const method = request.method;

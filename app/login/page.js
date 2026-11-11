@@ -97,6 +97,7 @@ export default function Login() {
             </form>
           )}
         </section>
+        <p className="hint" style={{ textAlign: "center" }}><a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a></p>
       </div>
     </>
   );
