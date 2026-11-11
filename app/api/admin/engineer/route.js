@@ -69,7 +69,7 @@ export async function POST(req) {
   if (!file || typeof file === "string" || !file.size) return NextResponse.json({ ok: false, error: "Choose an image." }, { status: 400 });
   if (!String(file.type || "").startsWith("image/")) return NextResponse.json({ ok: false, error: "That file isn't an image (use PNG or JPG)." }, { status: 400 });
   if (file.size > 5 * 1024 * 1024) return NextResponse.json({ ok: false, error: "That image is over 5 MB." }, { status: 400 });
-  const drive = getDrive();
+  const drive = await getDrive();
   if (!drive) return NextResponse.json({ ok: false, error: "Google Drive isn't connected." }, { status: 500 });
   try {
     const name = `${(c.person.full_name || c.person.email).replace(/[\\/:*?"<>|]/g, "-")} - PE ${kind}.${/png/.test(file.type) ? "png" : "jpg"}`;

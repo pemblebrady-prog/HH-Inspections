@@ -8,7 +8,7 @@ export async function GET(req) {
   const auth = await requireUser(["admin", "engineer"]);
   if (auth.error) return auth.error;
   const id = new URL(req.url).searchParams.get("id");
-  const drive = getDrive();
+  const drive = await getDrive();
   if (!id || !/^[\w-]+$/.test(id) || !drive) return new Response("Not found", { status: 404 });
   try {
     const meta = await drive.files.get({ fileId: id, fields: "mimeType", supportsAllDrives: true });

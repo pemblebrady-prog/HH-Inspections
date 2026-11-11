@@ -108,7 +108,7 @@ export async function POST(req) {
   const co = auth.profile && auth.profile.company;
   const amountPaid = (co && co.price_cents != null ? co.price_cents : await getDefaultPriceCents(dbx)) / 100; // old Drive tracker column
 
-  const drive = getDrive();
+  const drive = await getDrive();
   if (!drive) {
     const ref = await recordInDatabase({ profile: auth.profile, data, date, isDemo, photoCount: data.photoCount, clientId });
     if (ref) id = ref;

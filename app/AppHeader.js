@@ -23,7 +23,7 @@ function navFor(profile, minimal) {
     { href: "/admin/reports", label: "Reports" },
     { href: "/admin/companies", label: "Companies" },
     { href: "/admin/engineer", label: "Engineers" },
-    { href: "/admin/email", label: "Email" },
+    { href: "/admin/email", label: "Google & email" },
     { href: "/tracker", label: "Old tracker" },
   ];
   if (profile.role === "engineer") return [{ href: "/admin/review", label: "Review queue" }, { href: "/admin/engineer", label: "My PE details" }];

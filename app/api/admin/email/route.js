@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "../../../../lib/supabase/server";
 import { getGmailSender, disconnectGmail } from "../../../../lib/gmail";
+import { getDriveOwner, disconnectDrive } from "../../../../lib/drive";
 import { sendEmail, fromAddress } from "../../../../lib/email";
 
 export const runtime = "nodejs";
@@ -10,7 +11,9 @@ export async function GET() {
   const auth = await requireUser(["admin"]);
   if (auth.error) return auth.error;
   const g = await getGmailSender({ fresh: true }).catch(() => null);
-  return NextResponse.json({ ok: true, gmail: g ? { email: g.email, connectedAt: g.connectedAt } : null, fallback: process.env.RESEND_API_KEY ? fromAddress() : null });
+  const d = await getDriveOwner({ fresh: true }).catch(() => null);
+  return NextResponse.json({ ok: true, gmail: g ? { email: g.email, connectedAt: g.connectedAt } : null, fallback: process.env.RESEND_API_KEY ? fromAddress() : null,
+    drive: d ? { email: d.email, connectedAt: d.connectedAt, folderId: d.rootFolderId } : null, driveOld: Boolean(process.env.GOOGLE_OAUTH_REFRESH_TOKEN || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) });
 }
 
 // { action: "test", to } or { action: "disconnect" }
@@ -19,6 +22,7 @@ export async function POST(req) {
   if (auth.error) return auth.error;
   let b; try { b = await req.json(); } catch { return NextResponse.json({ ok: false, error: "Bad request" }, { status: 400 }); }
   if (b.action === "disconnect") { await disconnectGmail(); return NextResponse.json({ ok: true }); }
+  if (b.action === "disconnect-drive") { await disconnectDrive(); return NextResponse.json({ ok: true }); }
   if (b.action === "test") {
     const to = String(b.to || auth.profile.email || "").trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return NextResponse.json({ ok: false, error: "Enter an email address." }, { status: 400 });

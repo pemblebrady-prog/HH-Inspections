@@ -15,7 +15,7 @@ export async function POST(req) {
     return NextResponse.json({ ok: false, error: "No file" }, { status: 400 });
   }
 
-  const drive = getDrive();
+  const drive = await getDrive();
   // Simulated mode — pretend it worked so the demo flow completes.
   if (!drive || !folderId) {
     return NextResponse.json({ ok: true, simulated: true });

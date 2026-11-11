@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req) {
   const auth = await requireUser();
   if (auth.error) return auth.error;
-  const drive = getDrive();
+  const drive = await getDrive();
   if (!drive || !auth.profile) return NextResponse.json({ ok: true, off: true }); // no Drive / no login: send on submit instead
   const form = await req.formData();
   const photoId = String(form.get("photoId") || "");
@@ -29,7 +29,7 @@ export async function POST(req) {
 export async function DELETE(req) {
   const auth = await requireUser();
   if (auth.error) return auth.error;
-  const drive = getDrive();
+  const drive = await getDrive();
   if (!drive || !auth.profile) return NextResponse.json({ ok: true });
   let b; try { b = await req.json(); } catch { return NextResponse.json({ ok: false, error: "Bad request" }, { status: 400 }); }
   const id = String(b.id || "");

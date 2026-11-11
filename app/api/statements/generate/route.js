@@ -27,7 +27,7 @@ export async function POST(req) {
     return NextResponse.json({ ok: false, error: "Company and month are required." }, { status: 400 });
   }
 
-  const drive = getDrive();
+  const drive = await getDrive();
   if (!drive) return NextResponse.json({ ok: true, simulated: true });
 
   try {

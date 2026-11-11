@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req) {
   const auth = await requireUser();
   if (auth.error) return auth.error;
-  const drive = getDrive();
+  const drive = await getDrive();
   if (!drive || !auth.profile) return NextResponse.json({ ok: false, error: "Not available" }, { status: 404 });
   let b; try { b = await req.json(); } catch { return NextResponse.json({ ok: false, error: "Bad request" }, { status: 400 }); }
   const id = String(b.id || ""), folderId = String(b.folderId || ""), name = String(b.filename || "photo.jpg").slice(0, 200);

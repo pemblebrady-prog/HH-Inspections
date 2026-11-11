@@ -29,7 +29,7 @@ export async function POST(req) {
     if (cErr) throw cErr;
 
     // Logo goes to Drive (where the letter generator reads it from).
-    const drive = getDrive();
+    const drive = await getDrive();
     const file = form.get("logo");
     if (drive && file && typeof file !== "string" && file.size > 0) {
       const buffer = Buffer.from(await file.arrayBuffer());

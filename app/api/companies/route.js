@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic"; // always re-fetch from Drive; never cac
 export async function GET() {
   const auth = await requireUser();
   if (auth.error) return auth.error;
-  const drive = getDrive();
+  const drive = await getDrive();
   if (!drive) return NextResponse.json({ ok: true, companies: [], simulated: true });
   try {
     const { companies } = await readCompanies(drive, rootFolderId());

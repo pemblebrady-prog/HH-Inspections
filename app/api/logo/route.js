@@ -9,7 +9,7 @@ export async function GET(req) {
   const auth = await requireUser();
   if (auth.error) return auth.error;
   const id = new URL(req.url).searchParams.get("id");
-  const drive = getDrive();
+  const drive = await getDrive();
   if (!id || !/^[\w-]+$/.test(id) || !drive) return new Response("Not found", { status: 404 });
   const me = auth.profile;
   if (me && me.role !== "admin" && me.role !== "engineer" && !(me.company && me.company.logo_drive_file_id === id)) return new Response("Not found", { status: 404 });

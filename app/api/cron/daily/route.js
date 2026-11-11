@@ -17,7 +17,7 @@ export async function GET(req) {
   const db = createAdminClient();
   if (!db) return NextResponse.json({ ok: false, error: "Database isn't configured." }, { status: 500 });
   const r = await sendLicenseWarnings(db, { origin: new URL(req.url).origin });
-  const drive = getDrive();
+  const drive = await getDrive();
   r.stagedPhotosRemoved = drive ? await cleanStaging(drive, 14).catch((e) => { console.error("staging cleanup", e.message); return 0; }) : 0;
   console.log("daily", JSON.stringify(r));
   return NextResponse.json({ ok: true, ...r });

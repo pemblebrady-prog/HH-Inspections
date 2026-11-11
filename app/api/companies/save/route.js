@@ -20,7 +20,7 @@ export async function POST(req) {
 
   if (!name) return NextResponse.json({ ok: false, error: "Company name is required." }, { status: 400 });
 
-  const drive = getDrive();
+  const drive = await getDrive();
   if (!drive) return NextResponse.json({ ok: true, simulated: true });
 
   try {
