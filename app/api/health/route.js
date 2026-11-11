@@ -29,6 +29,9 @@ export async function GET() {
       CRON_SECRET: has("CRON_SECRET"),
       ORDER_INTAKE_SECRET: has("ORDER_INTAKE_SECRET"),
     },
+    // Not secret (Google shows it in every sign-in link); helps match it to the OAuth client in Google Cloud.
+    googleClientId: process.env.GOOGLE_OAUTH_CLIENT_ID ? String(process.env.GOOGLE_OAUTH_CLIENT_ID).trim() : null,
+    googleClientIdHasSpaces: /\s/.test(String(process.env.GOOGLE_OAUTH_CLIENT_ID || "")),
     stripeMode: String(process.env.STRIPE_SECRET_KEY || "").startsWith("sk_live_") ? "live" : process.env.STRIPE_SECRET_KEY ? "test" : "off",
     gfFormIds: { raw: JSON.stringify(process.env.GF_FORM_IDS ?? null), parsed: String(process.env.GF_FORM_IDS || "").split(",").map((x) => Number(x.trim())).filter(Boolean) },
     gfSettingNames: Object.keys(process.env).filter((k) => /^GF|GRAVITY/i.test(k)).sort(),
