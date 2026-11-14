@@ -85,12 +85,17 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
     },
   ];
 
-  const photoScreens = PHOTO_SLOTS.map((slot) => ({
-    title: `Photo ${slot.n} of ${PHOTO_SLOTS.length}`,
+  // All photo sections on one scrolling page (Brian, Nov 14).
+  const filled = PHOTO_SLOTS.filter((s) => (photos[s.id] || []).length > 0).length;
+  const photoScreens = [{
+    title: "Photos",
     render: () => (<>
-      <PhotoSlot big label={slot.label} sub="Add as many as you need. Optional — skip if it doesn't apply." items={photos[slot.id]} onAdd={addTo(slot.id)} onRemove={removeFrom(slot.id)} checks={form.checks} sent={form.sentAhead}>{slot.id === "p03" && <TagFinding find={form.tagFind} f={f} setVal={form.setVal} />}</PhotoSlot>
+      <p className="hint" style={{ marginBottom: 14 }}>Add as many photos as you need in each section. Skip any that don't apply. <b>{filled} of {PHOTO_SLOTS.length}</b> sections have photos.</p>
+      {PHOTO_SLOTS.map((slot) => (
+        <PhotoSlot key={slot.id} label={`${slot.n}. ${slot.label}`} items={photos[slot.id]} onAdd={addTo(slot.id)} onRemove={removeFrom(slot.id)} checks={form.checks} sent={form.sentAhead}>{slot.id === "p03" && <TagFinding find={form.tagFind} f={f} setVal={form.setVal} />}</PhotoSlot>
+      ))}
     </>),
-  }));
+  }];
 
   const co = form.profile && form.profile.company;
   const internal = Boolean(co && co.is_internal);
