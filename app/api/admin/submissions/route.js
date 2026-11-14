@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../../lib/supabase/server";
-import { generateLetter } from "../../../../lib/letters";
+import { generateLetter, companyForLetter } from "../../../../lib/letters";
 import { chargeSubmission } from "../../../../lib/charges";
 import { deliverFinalLetter } from "../../../../lib/delivery";
 import { engineerForJob } from "../../../../lib/engineers";
@@ -44,6 +44,8 @@ export async function PATCH(req) {
       if (b.action === "deliver") patch.delivered_at = now;
       if (b.action === "reopen") { patch.certified_at = null; patch.delivered_at = null; }
     } else if (b.action === "send") {
+      // The engineer signs off first: only certified (or already delivered) jobs can be sent.
+      if (!["certified", "delivered"].includes(sub.status)) return NextResponse.json({ ok: false, error: "Mark this job certified before sending the final letter." }, { status: 400 });
       const r = await deliverFinalLetter(db, sub, { recipients: b.recipients, force: Boolean(b.force), sentBy: me });
       if (r.needsConfirm) return NextResponse.json({ ok: false, needsConfirm: true, problems: r.problems });
       if (!r.ok) return NextResponse.json({ ok: false, error: "Couldn't send to anyone: " + r.results.map((x) => `${x.to}: ${x.error}`).join("; "), results: r.results }, { status: 400 });
@@ -59,11 +61,10 @@ export async function PATCH(req) {
     } else if (b.action === "notes") {
       patch = { review_notes: String(b.notes || "").slice(0, 5000) };
     } else if (b.action === "letter") {
-      const companyName = (sub.report && sub.report.inspectionCompany) || (sub.company && !sub.company.is_internal ? sub.company.name : "");
       // Regenerating: the engineer clicking it (if they're an engineer) signs it; otherwise the reviewer / main engineer.
       const signer = auth.profile && auth.profile.role === "engineer" ? { ...sub, letter_engineer_id: auth.profile.id } : { ...sub, letter_engineer_id: null };
       const engineer = await engineerForJob(db, signer);
-      const r = await generateLetter({ folderId: sub.drive_folder_id, report: sub.report || {}, companyName, images: sub.photos || [], engineer });
+      const r = await generateLetter({ folderId: sub.drive_folder_id, report: sub.report || {}, company: await companyForLetter(db, sub), images: sub.photos || [], engineer });
       if (r.simulated) return NextResponse.json({ ok: false, error: "Google Drive isn't connected, so the letter can't be made." }, { status: 400 });
       await recordLetter(db, ["id", sub.id], r);
       const { data: fresh } = await db.from("submissions").select("*").eq("id", sub.id).single();

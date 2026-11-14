@@ -60,9 +60,11 @@ export default function CompanyAdmin({ id }) {
 
       <section className="card" style={{ marginTop: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <h2>People</h2><a href="/admin/people">Invite or change people →</a>
+          <h2>People</h2><a href="/admin/people">Change roles or deactivate →</a>
         </div>
-        {d.people.length === 0 ? <p className="hint">No one at this company yet. Invite the owner from People.</p> : (
+        <InviteForm companyId={c.id} internal={c.is_internal} hasOwner={activePeople.some((p) => p.role === "company_owner")}
+          onDone={async (text) => { await load(); setErr(""); setMsg(text); }} />
+        {d.people.length === 0 ? <p className="hint">No one at this company yet.</p> : (
           <div className="table-wrap" style={{ marginTop: 12 }}>
             <table className="track">
               <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>AZ cert #</th><th>Status</th></tr></thead>
@@ -202,7 +204,47 @@ function PaymentCard({ c, onSave }) {
   );
 }
 
+// Invite someone straight into this company (same as People → Invite, with the company filled in).
+function InviteForm({ companyId, internal, hasOwner, onDone }) {
+  const roles = internal ? [["inspector", "Inspector"], ["admin", "Admin"], ["engineer", "Engineer"]] : [["inspector", "Inspector"], ["company_owner", "Company owner"]];
+  const blank = { email: "", fullName: "", role: !internal && !hasOwner ? "company_owner" : "inspector" };
+  const [f, setF] = useState(blank);
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
+  async function invite(e) {
+    e.preventDefault(); setBusy(true); setErr("");
+    const staff = ["admin", "engineer"].includes(f.role);
+    const r = await api("/api/admin/people", json("POST", { action: "invite", ...f, companyId: staff ? null : companyId }));
+    setBusy(false);
+    if (!r.ok) { setErr(r.error || "Couldn't invite"); return; }
+    const who = f.fullName.trim() || f.email.trim();
+    setF(blank); setOpen(false);
+    onDone(r.emailed ? `Invited ${who} and sent them a welcome email.` : `Added ${who}. The welcome email didn't send, so tell them to sign in at the portal with their email.`);
+  }
+  if (!open) return <button className="viewswitch" type="button" style={{ marginTop: 10 }} onClick={() => setOpen(true)}>+ Invite someone</button>;
+  return (
+    <form onSubmit={invite} className="send-box" style={{ marginTop: 12 }}>
+      <div className="grid2" style={{ gap: 12 }}>
+        <div className="field" style={{ marginBottom: 10 }}><label htmlFor="inv-email" className="req">Email</label><input id="inv-email" type="email" value={f.email} onChange={set("email")} required autoFocus /></div>
+        <div className="field" style={{ marginBottom: 10 }}><label htmlFor="inv-name">Name</label><input id="inv-name" value={f.fullName} onChange={set("fullName")} /></div>
+      </div>
+      <div className="field" style={{ marginBottom: 10 }}><label htmlFor="inv-role">Role</label>
+        <select id="inv-role" value={f.role} onChange={set("role")}>{roles.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+        {f.role === "company_owner" && <div className="hint">Owners can invite their own inspectors and manage billing.</div>}</div>
+      <p className="hint" style={{ margin: "0 0 10px" }}>They'll get a welcome email with a link to sign in.</p>
+      <div style={{ display: "flex", gap: 10 }}>
+        <button className="btn" disabled={busy}>{busy ? "Inviting…" : "Send invite"}</button>
+        <button className="btn ghost" type="button" disabled={busy} onClick={() => { setOpen(false); setErr(""); }}>Cancel</button>
+      </div>
+      {err && <p className="err" style={{ marginTop: 8 }}>{err}</p>}
+    </form>
+  );
+}
+
 function DetailsCard({ c, onSave, onLogo }) {
+  const [name, setName] = useState(c.name || "");
   const [f, setF] = useState({
     phone: c.phone || "", email: c.email || "", billingContact: c.billing_contact || "",
     billingAddress: c.billing_address || "", billingCity: c.billing_city || "", billingState: c.billing_state || "AZ", billingZip: c.billing_zip || "",
@@ -211,7 +253,12 @@ function DetailsCard({ c, onSave, onLogo }) {
   const [logoBusy, setLogoBusy] = useState(false);
   const [logoErr, setLogoErr] = useState("");
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
-  async function save(e) { e.preventDefault(); setBusy(true); await onSave({ details: f }, "Company details saved."); setBusy(false); }
+  async function save(e) {
+    e.preventDefault(); setBusy(true);
+    const renamed = name.trim() && name.trim() !== c.name;
+    await onSave({ details: f, ...(renamed ? { name } : {}) }, renamed ? `Saved. The company is now called ${name.trim()}.` : "Company details saved.");
+    setBusy(false);
+  }
   async function logo(e) {
     const file = e.target.files && e.target.files[0]; if (!file) return;
     setLogoBusy(true); setLogoErr("");
@@ -227,6 +274,9 @@ function DetailsCard({ c, onSave, onLogo }) {
     <section className="card">
       <h2>Details</h2>
       <form onSubmit={save} style={{ marginTop: 12 }}>
+        <div className="field" style={{ marginBottom: 12 }}><label htmlFor="co-name">Company name</label>
+          <input id="co-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} required />
+          {name.trim() && name.trim() !== c.name && <div className="hint">New letters, statements and emails will use the new name. Letters already sent keep the old one.</div>}</div>
         <div className="grid2">{inp("phone", "Phone", { type: "tel" })}{inp("email", "Email", { type: "email" })}</div>
         {inp("billingContact", "Billing contact")}
         {inp("billingAddress", "Billing address")}
@@ -235,7 +285,6 @@ function DetailsCard({ c, onSave, onLogo }) {
           <input id="co-logo" type="file" accept="image/*" onChange={logo} disabled={logoBusy} />
           {logoBusy && <div className="hint">Uploading…</div>}{logoErr && <div className="err">{logoErr}</div>}</div>
         <button className="btn" disabled={busy}>{busy ? "Saving…" : "Save details"}</button>
-        <p className="hint">The company name can't be changed here yet, because letters look up the logo by name.</p>
       </form>
     </section>
   );

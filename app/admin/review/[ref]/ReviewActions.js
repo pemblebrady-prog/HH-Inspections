@@ -18,7 +18,8 @@ export default function ReviewActions({ job }) {
   const [letter, setLetter] = useState(job.letter_link);
   const [to, setTo] = useState((job.recipients || []).join("\n"));
   const [results, setResults] = useState(null);
-  const canSend = ["under_review", "certified", "delivered"].includes(job.status) && letter;
+  const canSend = ["certified", "delivered"].includes(job.status) && letter;
+  const needsCertify = job.status === "under_review" && letter;
 
   async function send(force) {
     setBusy("send"); setErr(""); setMsg(""); setResults(null);
@@ -71,10 +72,11 @@ export default function ReviewActions({ job }) {
             {job.final_pdf_link && <a className="hint" href={job.final_pdf_link} target="_blank" rel="noreferrer">Last sent PDF</a>}
           </div>
         )}
+        {needsCertify && <p className="hint" style={{ margin: 0 }}>Mark the job certified (below) to send the final letter.</p>}
         <hr />
         {(NEXT[job.status] || []).map(([a, label, style]) => (
           <button key={a} className={"btn" + (style ? " " + style : "")} type="button" disabled={!!busy}
-            onClick={() => { if (a !== "certify" || window.confirm("Mark this job certified? Do this after the signed letter is final.")) act(a); }}>
+            onClick={() => { if (a !== "certify" || window.confirm("Mark this job certified? Do this once the letter is final. Then you can send it.")) act(a); }}>
             {busy === a ? "Saving…" : label}
           </button>
         ))}

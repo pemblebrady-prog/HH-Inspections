@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../../lib/supabase/server";
 import { chargeSubmission, sendSubmissionEmails } from "../../../../lib/charges";
 import { alertNewSubmission } from "../../../../lib/alerts";
-import { generateLetter } from "../../../../lib/letters";
+import { generateLetter, companyForLetter } from "../../../../lib/letters";
 import { engineerForJob } from "../../../../lib/engineers";
 import { recordLetter } from "../../../../lib/letterRecord";
 
@@ -59,9 +59,8 @@ export async function POST(req) {
 
   // Draft letter (best effort).
   try {
-    const companyName = (sub.report && sub.report.inspectionCompany) || (company && !company.is_internal ? company.name : "");
     const engineer = await engineerForJob(db, sub);
-    const r = await generateLetter({ folderId: sub.drive_folder_id, report: sub.report || {}, companyName, images, engineer });
+    const r = await generateLetter({ folderId: sub.drive_folder_id, report: sub.report || {}, company: await companyForLetter(db, sub), images, engineer });
     if (!r.simulated) await recordLetter(db, ["id", sub.id], r);
   } catch (e) { console.error("letter failed", e); }
 
