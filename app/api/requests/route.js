@@ -19,11 +19,11 @@ export async function POST(req) {
   if (errors) return NextResponse.json({ ok: false, errors, error: "Please fix the highlighted fields." }, { status: 400 });
 
   const db = createAdminClient();
-  if (!db) return NextResponse.json({ ok: false, error: "The request system isn't set up yet. Please call 520-245-7897." }, { status: 500 });
+  if (!db) return NextResponse.json({ ok: false, error: "The request system isn't set up yet. Please call 520-599-7798." }, { status: 500 });
   const { data: order, error } = await db.from("orders").insert(row).select("id, ref, property_address, inspection_detail, requester").single();
   if (error) {
     console.error("request insert failed", error);
-    return NextResponse.json({ ok: false, error: "We couldn't save your request. Please try again, or call 520-245-7897." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "We couldn't save your request. Please try again, or call 520-599-7798." }, { status: 500 });
   }
   const origin = new URL(req.url).origin;
   await Promise.all([

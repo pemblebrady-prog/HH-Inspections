@@ -1,7 +1,7 @@
 // Shared layout for the public Privacy Policy and Terms of Service pages.
 export const BUSINESS = "House and Home AZ Inspection Service";
 export const CONTACT_EMAIL = "houseandhomeengineering@gmail.com";
-export const CONTACT_PHONE = "520-245-7897";
+export const CONTACT_PHONE = "520-599-7798";
 export const UPDATED = "November 10, 2026";
 
 export default function LegalPage({ title, children }) {

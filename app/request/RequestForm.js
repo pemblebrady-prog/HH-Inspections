@@ -228,7 +228,7 @@ export default function RequestForm() {
               : <button className="btn" type="button" onClick={next}>Next</button>}
           </div>
         </section>
-        <p className="hint" style={{ textAlign: "center" }}>Questions? Call <a href="tel:5202457897">520-245-7897</a>. · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+        <p className="hint" style={{ textAlign: "center" }}>Questions? Call <a href="tel:5205997798">520-599-7798</a>. · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
       </div>
     </FormCtx.Provider>
   );

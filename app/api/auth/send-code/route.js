@@ -29,7 +29,7 @@ export async function POST(req) {
       return NextResponse.json({ ok: false, code: "not_invited", error: "This email isn't set up for the portal yet. Ask House & Home to add you." }, { status: 400 });
     }
     if (person.role !== "admin" && (await companyIsOff(db, person.company_id))) {
-      return NextResponse.json({ ok: false, code: "company_off", error: "Your company's portal account is turned off. Call House & Home at 520-245-7897." }, { status: 403 });
+      return NextResponse.json({ ok: false, code: "company_off", error: "Your company's portal account is turned off. Call House & Home at 520-599-7798." }, { status: 403 });
     }
 
     const { data, error } = await withTimeout(

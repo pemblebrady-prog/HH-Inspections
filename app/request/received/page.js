@@ -33,7 +33,7 @@ export default async function RequestReceived({ searchParams }) {
         <section className="card">
           <h2>Thank you for ordering your inspection</h2>
           {order && <p className="intro">Your request number is <b>{order.ref}</b>.</p>}
-          <p className="intro">Your order has been received and will be processed by our office. We will contact you shortly, via email, regarding the date and time of your inspection, the cost, and how to pay online. You can also call our office at <a href="tel:5202457897">520-245-7897</a>.</p>
+          <p className="intro">Your order has been received and will be processed by our office. We will contact you shortly, via email, regarding the date and time of your inspection, the cost, and how to pay online. You can also call our office at <a href="tel:5205997798">520-599-7798</a>.</p>
           <p className="intro">If payment is not received before 5pm the day before the inspection is scheduled, the inspection will not proceed.</p>
           <p className="intro">For the safety of our inspectors, please make sure all occupants of the home and property know about the inspection, and that all areas around and under the home are accessible (no locks). If the inspector can't reach the areas needed, a return trip fee applies.</p>
           <p className="intro">Inspections are weather permitting. If one must be postponed for weather, we'll reschedule as soon as possible at no extra charge. A $25.00 fee applies to cancelled inspections.</p>
