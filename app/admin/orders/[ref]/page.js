@@ -40,7 +40,7 @@ export default async function OrderPage({ params }) {
             <section className="card">
               <h3 style={{ marginTop: 0 }}>Requested by</h3>
               <KV rows={[["Name", r.name], ["Company", r.company], ["Phone", r.phone && <a href={`tel:${r.phone}`}>{r.phone}</a>], ["Email", r.email && <a href={`mailto:${r.email}`}>{r.email}</a>], ["Address", r.address]]} />
-              <p className="hint">This person receives the report and is responsible for payment before the inspection (via ISN).</p>
+              <p className="hint">This person receives the report and is responsible for payment before the inspection.</p>
               {(o.report_copies || []).length > 0 && (<><h3>Report copies</h3><KV rows={(o.report_copies || []).map((c, i) => [`Copy ${i + 1}`, `${c.name ? c.name + " · " : ""}${c.email}`])} /></>)}
             </section>
             <section className="card" style={{ marginTop: 18 }}>
