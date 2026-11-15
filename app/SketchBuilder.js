@@ -192,11 +192,21 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
     else setSel((cur) => (cur === d.id ? null : d.id));       // a tap selects / unselects
   }
 
-  function addTag(code) {
+  // at: where the inspector tapped (stamp mode); otherwise tags line up above the home.
+  function addTag(code, at) {
     const n = data.tags.length;
-    const g = { id: uid(), code, x: lay.home.x + lay.home.w / 2 + ((n % 5) - 2) * lay.tag * 1.6, y: lay.home.y - lay.tag * 1.6 + Math.floor(n / 5) * lay.tag * 1.4 };
-    if (g.y < lay.tag) g.y = lay.home.y + lay.home.h / 2;
+    const g = at
+      ? { id: uid(), code, x: Math.max(2, Math.min(lay.W - 2, at.x)), y: Math.max(2, Math.min(lay.H - 2, at.y)) }
+      : { id: uid(), code, x: lay.home.x + lay.home.w / 2 + ((n % 5) - 2) * lay.tag * 1.6, y: lay.home.y - lay.tag * 1.6 + Math.floor(n / 5) * lay.tag * 1.4 };
+    if (!at && g.y < lay.tag) g.y = lay.home.y + lay.home.h / 2;
     commit({ ...data, tags: [...data.tags, g] }); setSel(g.id);
+  }
+  // Stamp mode: after picking a letter, every tap on the drawing drops another one, until Done.
+  const [stamp, setStamp] = useState(null);
+  const pickTag = (code) => { setStamp(code); addTag(code); };
+  const doneTags = () => { setStamp(null); setSel(null); };
+  function onCanvasDown(e) {
+    if (stamp) { e.preventDefault(); addTag(stamp, toWorld(e)); } else setSel(null);
   }
   const [picking, setPicking] = useState(false);
   function addStructure(type) {
@@ -245,7 +255,7 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
 
       <div className="sk-canvas">
         <svg ref={svgRef} viewBox={`0 0 ${lay.W} ${lay.H}`} preserveAspectRatio="xMidYMid meet" onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
-          onPointerDown={() => setSel(null)} style={{ touchAction: "none", width: "100%", height: "100%", display: "block" }}>
+          onPointerDown={onCanvasDown} style={{ touchAction: "none", width: "100%", height: "100%", display: "block" }}>
           <Drawing f={f} data={data} lay={lay} selected={sel} onDown={onDown} />
         </svg>
       </div>
@@ -287,6 +297,23 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
             </div>
             <p className="sk-hint">Pick one, then choose a size or type the exact measurements.</p>
           </div>
+        ) : stamp ? (
+          <div>
+            <div className="sk-tags" aria-label="Pick a tag, then tap the drawing to place it">
+              {TAGS.map(([code, label, c]) => (
+                <button key={code} type="button" className={"sk-tag" + (c === "r" ? " red" : "") + (code === stamp ? " on" : "")} aria-pressed={code === stamp} onClick={() => pickTag(code)} title={label}>
+                  <b>{code}</b><span>{label}</span>
+                </button>
+              ))}
+            </div>
+            <div className="sk-row">
+              <span className="sk-lbl">Adding {stamp}: {(TAGS.find((x) => x[0] === stamp) || [])[1]}</span>
+              <button type="button" className="btn ghost sk-small" onClick={() => addTag(stamp)}>+ Another {stamp}</button>
+              {selTag && <button type="button" className="sk-del" onClick={remove}>Delete tag</button>}
+              <button type="button" className="sk-link" onClick={doneTags}>Done</button>
+            </div>
+            <p className="sk-hint">Tap the drawing to drop another {stamp} there. Drag any tag to move it. Tap a different letter to switch.</p>
+          </div>
         ) : selTag ? (
           <div className="sk-row">
             <span className="sk-lbl">{selTag.code}: {(TAGS.find((x) => x[0] === selTag.code) || [])[1]}</span>
@@ -297,7 +324,7 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
           <>
             <div className="sk-tags" aria-label="Tap a tag to add it, then drag it into place">
               {TAGS.map(([code, label, c]) => (
-                <button key={code} type="button" className={"sk-tag" + (c === "r" ? " red" : "")} onClick={() => addTag(code)} title={label}>
+                <button key={code} type="button" className={"sk-tag" + (c === "r" ? " red" : "")} onClick={() => pickTag(code)} title={label}>
                   <b>{code}</b><span>{label}</span>
                 </button>
               ))}
@@ -313,7 +340,7 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
               </div>
             )}
             <div className="sk-row">
-              <button type="button" className="btn ghost sk-small" onClick={() => { setSel(null); setPicking(true); }}>+ Add structure</button>
+              <button type="button" className="btn ghost sk-small" onClick={() => { setSel(null); setStamp(null); setPicking(true); }}>+ Add structure</button>
               <button type="button" className="btn ghost sk-small" onClick={() => commit({ ...data, north: ((data.north || 0) + 315) % 360 })} aria-label="Rotate north left">↺ N</button>
               <button type="button" className="btn ghost sk-small" onClick={() => commit({ ...data, north: ((data.north || 0) + 45) % 360 })} aria-label="Rotate north right">N ↻</button>
               <button type="button" className="btn ghost sk-small" onClick={undo} disabled={!hist.length}>Undo</button>
@@ -322,7 +349,7 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
               <label style={{ flex: 1 }}>Street<input value={data.street.name} placeholder="e.g. Wintergreen Rd" onChange={(e) => setData({ ...data, street: { ...data.street, name: e.target.value.slice(0, 40) } })} /></label>
               <label>Side<select value={data.street.side} onChange={(e) => commit({ ...data, street: { ...data.street, side: e.target.value } })}>{SIDES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
             </div>
-            <p className="sk-hint">Tap a tag to add it, then drag it into place. Tap anything to edit or delete it.</p>
+            <p className="sk-hint">Tap a tag, then tap the drawing to place as many as you need. Drag to move. Tap anything to edit or delete it.</p>
           </>
         )}
       </div>
