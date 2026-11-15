@@ -1,7 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
-import { SINGLE, MULTI, PHOTO_SLOTS, FEE } from "../lib/formConfig";
+import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, FEE } from "../lib/formConfig";
 import PhotoSlot from "./PhotoSlot";
+import TagFinding from "./TagFinding";
+import SketchLauncher from "./SketchLauncher";
+import AppHeader from "./AppHeader";
+import UploadStatus from "./UploadStatus";
+import TopNotices from "./TopNotices";
 
 const byId = (id) => SINGLE.find((s) => s.id === id);
 
@@ -41,6 +46,7 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
           <Field id="lengthFt" label="Length (ft)" f={f} set={set} placeholder="64" />
           <Field id="widthFt" label="Width (ft)" f={f} set={set} placeholder="28" />
         </div>
+        <Field id="sqft" label="Square footage" f={f} set={set} placeholder="e.g. 1,154" />
         <Select s={byId("inspectionType")} f={f} set={set} />
         <Select s={byId("frontFaces")} f={f} set={set} />
       </>),
@@ -55,44 +61,54 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
         <Select s={byId("tieDowns")} f={f} set={set} />
       </>),
     },
+    {
+      title: "Tags, tie-downs & access",
+      render: () => (<>
+        <Field id="hudTagNumbers" label="HUD tag numbers" f={f} set={set} placeholder="e.g. ARZ 249557, ARZ 249556" />
+        <Field id="tieDownsPerSide" label="Tie-downs per side" f={f} set={set} placeholder="e.g. 10" />
+        <Field id="crawlAccess" label="Crawlspace access location" f={f} set={set} placeholder="e.g. east side skirting" />
+        <Select s={byId("grading")} f={f} set={set} />
+        <Select s={byId("piersCondition")} f={f} set={set} />
+        <Select s={byId("skirtingCondition")} f={f} set={set} />
+        <Select s={byId("axles")} f={f} set={set} />
+      </>),
+    },
     { title: "Skirting, venting & framing", render: () => <>{["skirting", "venting", "framing"].map((id) => <Chips key={id} m={MULTI.find((x) => x.id === id)} f={f} toggle={toggle} />)}</> },
     { title: "Piers, insulation & moisture", render: () => <>{["piers", "insulation", "moisture"].map((id) => <Chips key={id} m={MULTI.find((x) => x.id === id)} f={f} toggle={toggle} />)}</> },
     {
       title: "Home sketch & comments",
       render: () => (<>
-        <PhotoSlot big label="Home sketch" sub="Draw it on paper or a tablet, then upload a photo of it." items={sketch} onAdd={addSketch} onRemove={() => setSketch([])} max={1} />
+        <SketchLauncher form={form} />
+        <PhotoSlot big label="Home sketch" sub="Your drawing appears here once saved, or upload a photo of a hand drawing." items={sketch} onAdd={addSketch} onRemove={() => setSketch([])} max={1} sent={form.sentAhead} />
         <div className="field" style={{ marginTop: 16 }}><label htmlFor="generalComments">General comments</label><textarea id="generalComments" value={f.generalComments} onChange={set("generalComments")} /></div>
       </>),
     },
   ];
 
-  const photoScreens = PHOTO_SLOTS.map((slot) => ({
-    title: `Photo ${slot.n} of ${PHOTO_SLOTS.length}`,
+  // All photo sections on one scrolling page (Brian, Nov 14).
+  const filled = PHOTO_SLOTS.filter((s) => (photos[s.id] || []).length > 0).length;
+  const photoScreens = [{
+    title: "Photos",
     render: () => (<>
-      <PhotoSlot big label={slot.label} sub="Add as many as you need. Optional — skip if it doesn't apply." items={photos[slot.id]} onAdd={addTo(slot.id)} onRemove={removeFrom(slot.id)} />
+      <p className="hint" style={{ marginBottom: 14 }}>Add as many photos as you need in each section. Skip any that don't apply. <b>{filled} of {PHOTO_SLOTS.length}</b> sections have photos.</p>
+      {PHOTO_SLOTS.map((slot) => (
+        <PhotoSlot key={slot.id} label={`${slot.n}. ${slot.label}`} items={photos[slot.id]} onAdd={addTo(slot.id)} onRemove={removeFrom(slot.id)} checks={form.checks} sent={form.sentAhead}>{slot.id === "p03" && <TagFinding find={form.tagFind} f={f} setVal={form.setVal} />}</PhotoSlot>
+      ))}
     </>),
-  }));
+  }];
 
+  const co = form.profile && form.profile.company;
+  const internal = Boolean(co && co.is_internal);
+  const coName = co && !co.is_internal ? co.name : f.inspectionCompany;
+  const price = co && co.price_cents != null ? co.price_cents / 100 : Number(FEE);
   const reviewScreen = {
-    title: "Pay & submit", isReview: true,
+    title: "Review & submit", isReview: true,
     render: () => (<>
-      <div className="summary"><div><div className="mono" style={{ color: "#9FD4E8" }}>Certification fee</div><small>{f.clientName ? "Client: " + f.clientName : "—"}</small></div><div className="amt">${FEE}.00</div></div>
+      <div className="summary"><div><div className="mono" style={{ color: "#9FD4E8" }}>Certification fee</div><small>{f.clientName ? "Client: " + f.clientName : "—"}</small></div><div className="amt">{internal ? "No charge" : `$${price.toFixed(2)}`}</div></div>
       <p className="hint" style={{ marginBottom: 14 }}>{totalPhotos()} file{totalPhotos() === 1 ? "" : "s"} ready to upload (incl. sketch).</p>
-      <Field id="cardname" label="Name on card" req f={f} set={set} invalid={invalid} />
-      <div className={"field" + (invalid.cardnum ? " invalid" : "")}><label className="req" htmlFor="cardnum">Card number</label>
-        <input id="cardnum" value={f.cardnum} inputMode="numeric" maxLength={19} placeholder="4242 4242 4242 4242"
-          onChange={(e) => form.setVal("cardnum", e.target.value.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim())} />
-        {invalid.cardnum && <div className="err">Enter a 16-digit card number.</div>}</div>
-      <div className="row c2">
-        <div className={"field" + (invalid.exp ? " invalid" : "")}><label className="req" htmlFor="exp">Expiry</label>
-          <input id="exp" value={f.exp} maxLength={7} placeholder="MM / YY" onChange={(e) => { let v = e.target.value.replace(/\D/g, "").slice(0, 4); if (v.length > 2) v = v.slice(0, 2) + " / " + v.slice(2); form.setVal("exp", v); }} />
-          {invalid.exp && <div className="err">Required.</div>}</div>
-        <div className={"field" + (invalid.cvc ? " invalid" : "")}><label className="req" htmlFor="cvc">CVC</label>
-          <input id="cvc" value={f.cvc} inputMode="numeric" maxLength={4} placeholder="123" onChange={(e) => form.setVal("cvc", e.target.value.replace(/\D/g, "").slice(0, 4))} />
-          {invalid.cvc && <div className="err">Required.</div>}</div>
-      </div>
-      <div className="lock"><span>Payment is stubbed for now — no card is charged.</span></div>
+      {!internal && <div className="lock"><span>Charged to {coName || "your company"}'s payment method on file. Online payment is being set up, so nothing is charged yet.</span></div>}
       {busy && <div className="progress"><div style={{ width: progress + "%" }} /></div>}
+            <UploadStatus form={form} />
     </>),
   };
 
@@ -106,14 +122,12 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
     if (cur.required && !validate(cur.required)) return;
     if (i < screens.length - 1) setI(i + 1);
   }
-  function submit() { if (validate(["cardname", "cardnum", "exp", "cvc"])) payAndSubmit(); }
+  function submit() { payAndSubmit(); }
 
   return (
     <div className="wiz">
-      <header><div className="bar">
-        <a className="brand" href="#"><b>House&nbsp;<span>&amp;</span>&nbsp;Home</b><span className="sub">Inspector Portal</span></a>
-        <div className="who">{onSwitchView && <button className="viewswitch" onClick={onSwitchView}>{switchLabel}</button>}</div>
-      </div></header>
+      <AppHeader title="Inspector Portal" profile={form.profile} right={onSwitchView && <button className="viewswitch" onClick={onSwitchView}>{switchLabel}</button>} />
+      <TopNotices form={form} />
 
       <div className="wiz-progress"><div style={{ width: pct + "%" }} /></div>
 
@@ -123,10 +137,13 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
         <div className="wiz-fields">{cur.render()}</div>
       </div>
 
+      {cur.isReview && !busy && totalPhotos() > 0 && form.sentAhead && form.sentAhead.size > 0 && (
+        <p className="hint" style={{ margin: "0 16px 8px", textAlign: "center" }}>{Math.min(form.sentAhead.size, totalPhotos())} of {totalPhotos()} photos already sent ahead, so submitting will be quicker.</p>
+      )}
       <div className="wiz-nav">
         <button className="btn ghost" onClick={() => setI(Math.max(0, i - 1))} disabled={i === 0 || busy}>Back</button>
         {cur.isReview
-          ? <button className="btn" onClick={submit} disabled={busy}>{busy ? `Uploading… ${progress}%` : `Pay $${FEE} & submit`}</button>
+          ? <button className="btn" onClick={submit} disabled={busy}>{busy ? `Uploading… ${progress}%` : "Submit"}</button>
           : <button className="btn" onClick={next}>Next</button>}
       </div>
     </div>

@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
+import { requireUser } from "../../../../lib/supabase/server";
 import { getDrive, rootFolderId, uploadCompanyLogo, addOrUpdateCompany } from "../../../../lib/drive";
 
 export const runtime = "nodejs";
 
 export async function POST(req) {
+  const auth = await requireUser(["admin"]);
+  if (auth.error) return auth.error;
   const form = await req.formData();
   const name = (form.get("name") || "").toString().trim();
   const phone = (form.get("phone") || "").toString().trim();
@@ -17,7 +20,7 @@ export async function POST(req) {
 
   if (!name) return NextResponse.json({ ok: false, error: "Company name is required." }, { status: 400 });
 
-  const drive = getDrive();
+  const drive = await getDrive();
   if (!drive) return NextResponse.json({ ok: true, simulated: true });
 
   try {
