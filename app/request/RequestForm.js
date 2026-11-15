@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { frameToTop } from "./FrameBridge";
 import { MAIN_TYPES, FOUNDATION_TYPES, CONVENTIONAL_TYPES } from "../../lib/requestOptions";
 
 const STEPS = ["Inspection & you", "The home", "Copies & send"];
@@ -84,7 +85,7 @@ export default function RequestForm() {
   const [err, setErr] = useState("");
   const started = useRef(Date.now());
   const honey = useRef(null);
-  useEffect(() => { window.scrollTo({ top: 0 }); }, [step]);
+  useEffect(() => { window.scrollTo({ top: 0 }); if (step > 0) frameToTop(); }, [step]);
 
   const bind = (path) => ({ value: getPath(f, path) ?? "", onChange: (e) => setF((s) => setPath(s, path, e.target.value)) });
   const pick = (path, val) => setF((s) => setPath(s, path, val));

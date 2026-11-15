@@ -123,6 +123,26 @@ Enforced in middleware, in each page/route, and by row-level security.
 - `/api/cron/daily` (15:41 UTC): PE license expiry warnings; deletes unclaimed early uploads after 14 days.
 - `/api/cron/statements` (1st of the month): emails monthly activity statements.
 
+## Request form on the website
+Paste this into a **Custom HTML** block on a houseandhomeaz.com page. The form grows to fit (no inner scrollbar),
+hides the portal's own header, and scrolls back to the top on each step. Only houseandhomeaz.com (and the portal
+itself) may frame the portal (`frame-ancestors` in `next.config.js`). Preview URLs can't be framed while Vercel's
+login is on, so test embedding on the live site; on Preview, link to `/request` instead.
+
+```html
+<iframe id="hh-request" src="https://hh-inspections.vercel.app/request" title="Inspection request form" style="width:100%;border:0;min-height:900px;display:block" scrolling="no"></iframe>
+<script>
+(function () {
+  var f = document.getElementById("hh-request");
+  window.addEventListener("message", function (e) {
+    if (e.source !== f.contentWindow || !e.data) return;
+    if (e.data.type === "hh-portal-height") { f.style.height = e.data.height + "px"; f.style.minHeight = "0"; }
+    if (e.data.type === "hh-portal-top") { f.scrollIntoView({ behavior: "smooth", block: "start" }); }
+  });
+})();
+</script>
+```
+
 ## Run locally
 
 ```bash
