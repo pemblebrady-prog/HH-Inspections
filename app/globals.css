@@ -367,3 +367,24 @@ body:has(.wiz-nav) .install-sheet{bottom:calc(84px + env(safe-area-inset-bottom)
 html.embedded, html.embedded body { background: transparent; }
 html.embedded header { display: none; }
 html.embedded .shell { padding-top: 8px; padding-bottom: 24px; }
+
+/* Help pages (☰ → Help) */
+.help{max-width:900px}
+.help h1{font-family:var(--serif,inherit);font-size:1.7rem;margin:6px 0 6px}
+.help-intro{color:var(--muted);margin:0 0 16px}
+.help-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.help-tabs a{padding:7px 14px;border:1px solid var(--line);border-radius:999px;background:var(--paper);color:inherit;text-decoration:none;font-size:.92rem}
+.help-tabs a.on{background:var(--blueprint);color:#fff;border-color:var(--blueprint)}
+.help-toc{margin:0 0 22px;padding-left:22px;columns:2;column-gap:28px;font-size:.95rem}
+.help-toc li{margin:3px 0;break-inside:avoid}
+.help-step{margin-bottom:18px;padding:24px}
+.help-step h2{display:flex;align-items:center;gap:10px;font-size:1.2rem;margin-bottom:10px}
+.help-step p{margin:0 0 10px;line-height:1.55}
+.help-num{display:inline-grid;place-items:center;min-width:28px;height:28px;border-radius:50%;background:var(--stamp);color:#fff;font-size:.9rem;font-weight:700}
+.help-tip{background:#eef5f8;border-left:3px solid var(--steel);padding:8px 12px;border-radius:4px;font-size:.93rem}
+.help-shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:14px}
+.help-shots.phone{grid-template-columns:repeat(auto-fill,minmax(180px,240px))}
+.help-shots figure{margin:0}
+.help-shots img{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.help-shots figcaption{font-size:.82rem;color:var(--muted);margin-top:5px}
+@media (max-width:600px){.help-toc{columns:1}.help-step{padding:18px}.help-shots.phone{grid-template-columns:repeat(2,1fr)}}
