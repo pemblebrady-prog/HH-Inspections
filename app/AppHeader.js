@@ -12,6 +12,10 @@ export function homeFor(profile) {
 
 function navFor(profile, minimal) {
   if (minimal || !profile) return [];
+  const help = { href: "/help", label: "Help" };
+  return [...roleNav(profile), help];
+}
+function roleNav(profile) {
   const submit = { href: "/", label: "Submit a job" };
   const jobs = { href: "/jobs", label: "My jobs" };
   if (profile.role === "admin") return [
