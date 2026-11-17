@@ -90,7 +90,9 @@ export default function PayClient({ job }) {
       ) : (
         <form onSubmit={pay}>
           <p className="intro">Your job is saved. It goes to the engineer as soon as it's paid.</p>
-          <div ref={mountRef} style={{ minHeight: ready ? 0 : 120 }}>{!ready && !err && <p className="hint">Loading the card form…</p>}</div>
+          {!ready && !err && <p className="hint">Loading the card form…</p>}
+          {/* Stripe owns this box (it replaces whatever is inside), so React must never put anything in it. */}
+          <div ref={mountRef} className="stripe-mount" style={{ minHeight: ready ? 0 : 120 }} />
           <button className="btn" style={{ marginTop: 16, width: "100%", justifyContent: "center" }} disabled={!ready || busy || charged}>{busy ? "Paying…" : charged ? "Paid" : `Pay ${money(job.amount)}`}</button>
           {busy && <p className="dont-leave" role="status" style={{ margin: "10px 0 0" }}><b>Please wait.</b> Don't close this page or tap Back until you see "Paid".</p>}
           <p className="hint">Card payments are processed securely by Stripe. Cards only for pay-as-you-go.</p>
