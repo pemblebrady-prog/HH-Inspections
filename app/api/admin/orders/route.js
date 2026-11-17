@@ -1,26 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../../lib/supabase/server";
-import { syncOrders } from "../../../../lib/orders";
 import { sendEmail } from "../../../../lib/email";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 function esc(s) { return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-
-// POST: check the website form for new requests.
-export async function POST(req) {
-  const auth = await requireUser(["admin"]);
-  if (auth.error) return auth.error;
-  const db = createAdminClient();
-  if (!db) return NextResponse.json({ ok: false, error: "Database isn't configured." }, { status: 500 });
-  try {
-    const r = await syncOrders(db, { origin: new URL(req.url).origin });
-    return NextResponse.json({ ok: true, ...r });
-  } catch (err) {
-    return NextResponse.json({ ok: false, error: err.message }, { status: 400 });
-  }
-}
 
 // PATCH: schedule / assign / status / notes / ISN number. Body: { ref, scheduledAt?, inspectorId?, status?, notes?, isnNumber?, notifyInspector? }
 export async function PATCH(req) {

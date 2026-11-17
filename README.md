@@ -117,7 +117,6 @@ Enforced in middleware, in each page/route, and by row-level security.
 | `RESEND_API_KEY`, `EMAIL_FROM` | no | Fallback email when Gmail isn't connected |
 | `PAYMENT_REQUIRED` | no | `true` = jobs from companies with no payment method go on hold |
 | `NEXT_PUBLIC_CERT_FEE` | no | Fallback fee in dollars before the default price is set (default 135) |
-| `GF_*`, `ORDER_INTAKE_SECRET` | no | Old Gravity Forms import, no longer used; can be removed |
 
 ### Cron (vercel.json)
 - `/api/cron/daily` (15:41 UTC): PE license expiry warnings; deletes unclaimed early uploads after 14 days.
@@ -178,7 +177,7 @@ app/
   tracker/                      older Drive-based tracker (admins only)
   api/
     auth/send-code, auth/verify-code    sign-in codes
-    requests, orders/*                  request form intake; orders, prefill, distance check
+    requests, orders/*                  request form; order prefill and distance check
     submit, submit/finalize, upload, upload/early, upload/claim   jobs and photos
     photos/check                        Claude photo checks
     admin/*                             people, companies, submissions (review actions), engineer,

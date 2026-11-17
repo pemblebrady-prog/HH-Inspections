@@ -1,29 +1,12 @@
-import { createAdminClient } from "../../../lib/supabase/server";
-import { importEntry } from "../../../lib/orders";
-import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
 export const metadata = { title: "Request received | House & Home" };
 
-// Gravity Forms sends the requester here after they submit (confirmation → Redirect).
-// /request/received?form=2&entry=123 → creates the order and thanks them. Public page.
+// Thank-you page after the portal request form: /request/received?ref=OR-1234. Public page.
 export default async function RequestReceived({ searchParams }) {
-  const form = Number(searchParams && searchParams.form), entry = Number(searchParams && searchParams.entry);
   let order = null;
   const ref = String((searchParams && searchParams.ref) || "");
   if (/^OR-\d{3,7}$/.test(ref)) order = { ref };
-  if (form && entry) {
-    const db = createAdminClient();
-    const h = headers();
-    const origin = `${h.get("x-forwarded-proto") || "https"}://${h.get("host")}`;
-    if (db) {
-      const { data: sent } = await db.from("orders").select("ref").eq("source_form_id", form).eq("source_entry_id", entry).maybeSingle();
-      if (sent) order = sent;
-      else try { order = await importEntry(db, form, entry, { origin }); }
-      catch (e) { console.error("order import failed", form, entry, e.message); }
-    }
-  }
   return (
     <>
       <header><div className="bar">
