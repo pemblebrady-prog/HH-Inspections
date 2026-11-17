@@ -5,7 +5,7 @@ import PhotoSlot from "./PhotoSlot";
 import TagFinding from "./TagFinding";
 import SketchLauncher from "./SketchLauncher";
 import AppHeader from "./AppHeader";
-import UploadStatus from "./UploadStatus";
+import UploadStatus, { PayNote, DontLeave } from "./UploadStatus";
 import TopNotices from "./TopNotices";
 
 export default function DesktopForm({ form, onSwitchView, switchLabel }) {
@@ -146,12 +146,10 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
               <div className="amt">{internal ? "No charge" : `$${price.toFixed(2)}`}</div>
             </div>
             {!internal && (
-              <div className="lock">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="1.5" stroke="#5c6b74" strokeWidth="1.6" /><path d="M8 11V8a4 4 0 018 0v3" stroke="#5c6b74" strokeWidth="1.6" /></svg>
-                <span>Charged to {coName || "your company"}'s payment method on file. Online payment is being set up, so nothing is charged yet.</span>
-              </div>
+              <PayNote co={co} coName={coName} price={price} />
             )}
             {busy && <div className="progress"><div style={{ width: progress + "%" }} /></div>}
+            {busy ? <DontLeave /> : <p className="hint">After you submit, keep this page open until you see the confirmation (usually a few seconds).</p>}
             <UploadStatus form={form} />
             <div className="actions">
               <button className="btn ghost" onClick={() => setStep(2)} disabled={busy}>← Back</button>

@@ -388,3 +388,6 @@ html.embedded .shell { padding-top: 8px; padding-bottom: 24px; }
 .help-shots img{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .help-shots figcaption{font-size:.82rem;color:var(--muted);margin-top:5px}
 @media (max-width:600px){.help-toc{columns:1}.help-step{padding:18px}.help-shots.phone{grid-template-columns:repeat(2,1fr)}}
+
+/* Submitting / paying: keep the page open */
+.dont-leave{margin:10px 16px;padding:10px 12px;border-radius:6px;background:#fff6dc;border:1px solid #e9cf86;color:#5a4410;font-size:.93rem;text-align:center}

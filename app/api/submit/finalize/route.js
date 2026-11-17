@@ -26,15 +26,31 @@ export async function POST(req) {
   if (me && me.role !== "admin" && sub.inspector_id !== me.id) return NextResponse.json({ ok: false, error: "Not your submission" }, { status: 403 });
 
   const alreadyDone = sub.status !== "uploading" && (sub.letter_link || (Array.isArray(sub.photos) && sub.photos.length));
-  if (alreadyDone) {
+  const answerAlready = async () => {
     const { data: co } = sub.company_id ? await db.from("companies").select("*").eq("id", sub.company_id).maybeSingle() : { data: null };
-    return NextResponse.json({ ok: true, ref: sub.ref, status: sub.status, payment_status: sub.payment_status, already: true,
-      pay_now: Boolean(paysByCard(co) && sub.status === "on_hold" && sub.payment_status !== "paid"), amount_cents: sub.amount_cents });
-  }
+    // A card-paying job that isn't paid yet needs the pay step, even if another request is still finishing it.
+    const payNow = Boolean(paysByCard(co) && ["on_hold", "submitted"].includes(sub.status) && sub.amount_cents > 0
+      && !["paid", "processing", "waived"].includes(sub.payment_status) && !sub.is_demo);
+    return NextResponse.json({ ok: true, ref: sub.ref, status: payNow ? "on_hold" : sub.status, payment_status: sub.payment_status, already: true,
+      pay_now: payNow, amount_cents: sub.amount_cents });
+  };
+  if (alreadyDone) return answerAlready();
 
   const origin = new URL(req.url).origin;
   const images = Array.isArray(b.images) ? b.images.filter((x) => x && typeof x.id === "string").slice(0, 300) : [];
-  await db.from("submissions").update({ photos: images, photo_count: images.length, status: "submitted" }).eq("id", sub.id);
+  // Claim the job: only one finalize can move it out of "uploading", so a retry, a second tab or a
+  // double tap never charges or emails twice. Whoever loses just reports the job's current state.
+  const { data: claimed } = await db.from("submissions").update({ photos: images, photo_count: images.length, status: "submitted" })
+    .eq("id", sub.id).eq("status", "uploading").select("id");
+  if (!claimed || !claimed.length) {
+    if (sub.status !== "uploading") { // older jobs created before this check: record the photos as before
+      await db.from("submissions").update({ photos: images, photo_count: images.length }).eq("id", sub.id);
+    } else {
+      const { data: now } = await db.from("submissions").select("*").eq("id", sub.id).single();
+      Object.assign(sub, now);
+      return answerAlready();
+    }
+  }
 
   let outcome = { status: "submitted", payment_status: sub.payment_status };
   let company = null;

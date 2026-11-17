@@ -5,7 +5,7 @@ import PhotoSlot from "./PhotoSlot";
 import TagFinding from "./TagFinding";
 import SketchLauncher from "./SketchLauncher";
 import AppHeader from "./AppHeader";
-import UploadStatus from "./UploadStatus";
+import UploadStatus, { PayNote, DontLeave } from "./UploadStatus";
 import TopNotices from "./TopNotices";
 
 const byId = (id) => SINGLE.find((s) => s.id === id);
@@ -106,7 +106,8 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
     render: () => (<>
       <div className="summary"><div><div className="mono" style={{ color: "#9FD4E8" }}>Certification fee</div><small>{f.clientName ? "Client: " + f.clientName : "—"}</small></div><div className="amt">{internal ? "No charge" : `$${price.toFixed(2)}`}</div></div>
       <p className="hint" style={{ marginBottom: 14 }}>{totalPhotos()} file{totalPhotos() === 1 ? "" : "s"} ready to upload (incl. sketch).</p>
-      {!internal && <div className="lock"><span>Charged to {coName || "your company"}'s payment method on file. Online payment is being set up, so nothing is charged yet.</span></div>}
+      {!internal && <PayNote co={co} coName={coName} price={price} />}
+      <p className="hint" style={{ marginTop: 10 }}>After you tap Submit, keep this page open until you see the confirmation (usually a few seconds).</p>
       {busy && <div className="progress"><div style={{ width: progress + "%" }} /></div>}
             <UploadStatus form={form} />
     </>),
@@ -140,6 +141,7 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
       {cur.isReview && !busy && totalPhotos() > 0 && form.sentAhead && form.sentAhead.size > 0 && (
         <p className="hint" style={{ margin: "0 16px 8px", textAlign: "center" }}>{Math.min(form.sentAhead.size, totalPhotos())} of {totalPhotos()} photos already sent ahead, so submitting will be quicker.</p>
       )}
+      {cur.isReview && busy && <DontLeave />}
       <div className="wiz-nav">
         <button className="btn ghost" onClick={() => setI(Math.max(0, i - 1))} disabled={i === 0 || busy}>Back</button>
         {cur.isReview

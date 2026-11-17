@@ -13,6 +13,15 @@ export default function PayClient({ job }) {
   const [err, setErr] = useState("");
   const mountRef = useRef(null);
   const s = useRef({});
+  const paying = useRef(false); // blocks a second tap before the button disables
+  const [charged, setCharged] = useState(false); // Stripe took the payment; we're still recording it
+
+  useEffect(() => { // warn before leaving mid-payment
+    if (!busy) return;
+    const warn = (e) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [busy]);
   const url = `/api/pay/${encodeURIComponent(job.ref)}`;
 
   useEffect(() => {
@@ -40,13 +49,21 @@ export default function PayClient({ job }) {
   async function pay(e) {
     e.preventDefault();
     const { stripe, elements } = s.current;
-    if (!stripe) return;
-    setBusy(true); setErr("");
+    if (!stripe || paying.current) return;
+    paying.current = true; setBusy(true); setErr("");
     const { error, paymentIntent } = await stripe.confirmPayment({ elements, redirect: "if_required", confirmParams: { return_url: window.location.href } });
-    if (error) { setBusy(false); setErr(error.message || "The payment didn't go through."); return; }
-    const d = await api(url, "PATCH", { paymentIntentId: paymentIntent.id });
+    if (error) { paying.current = false; setBusy(false); setErr(error.message || "The payment didn't go through."); return; }
+    // Stripe has the payment. Record it on our side; retry a few times if the connection drops.
+    // (Stripe also tells us directly through its webhook, so it's recorded even if this page closes.)
+    setCharged(true);
+    let d = null;
+    for (let i = 0; i < 4; i++) {
+      d = await api(url, "PATCH", { paymentIntentId: paymentIntent.id });
+      if (d.ok) break;
+      await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+    }
     setBusy(false);
-    if (!d.ok) { setErr(d.error || "Couldn't confirm the payment."); return; }
+    if (!d || !d.ok) { setErr("Your payment went through, and we're finishing up. Please don't pay again. Check My jobs in a minute."); return; }
     setPaid(true);
   }
 
@@ -74,7 +91,8 @@ export default function PayClient({ job }) {
         <form onSubmit={pay}>
           <p className="intro">Your job is saved. It goes to the engineer as soon as it's paid.</p>
           <div ref={mountRef} style={{ minHeight: ready ? 0 : 120 }}>{!ready && !err && <p className="hint">Loading the card form…</p>}</div>
-          <button className="btn" style={{ marginTop: 16, width: "100%", justifyContent: "center" }} disabled={!ready || busy}>{busy ? "Paying…" : `Pay ${money(job.amount)}`}</button>
+          <button className="btn" style={{ marginTop: 16, width: "100%", justifyContent: "center" }} disabled={!ready || busy || charged}>{busy ? "Paying…" : charged ? "Paid" : `Pay ${money(job.amount)}`}</button>
+          {busy && <p className="dont-leave" role="status" style={{ margin: "10px 0 0" }}><b>Please wait.</b> Don't close this page or tap Back until you see "Paid".</p>}
           <p className="hint">Card payments are processed securely by Stripe. Cards only for pay-as-you-go.</p>
         </form>
       )}
