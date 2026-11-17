@@ -3,6 +3,7 @@ import { getCurrentProfile, createAdminClient } from "../../lib/supabase/server"
 import { authEnabled } from "../../lib/supabase/config";
 import { StatusPill } from "../../lib/statusLabels";
 import AppHeader from "../AppHeader";
+import { paysByCard } from "../../lib/payPerJob";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +21,13 @@ export default async function MyJobs() {
   if (!profile) redirect("/login?next=/jobs");
   if (profile.role === "admin" || profile.role === "engineer") redirect("/admin/review");
   const owner = profile.role === "company_owner";
-  const payPerJob = Boolean(profile.company && profile.company.pay_per_job);
   const db = createAdminClient();
+  // Jobs waiting for a card payment get a Pay now button (pay-as-you-go, or no saved payment method).
+  let payPerJob = false;
+  if (profile.company_id) {
+    const { data: co } = await db.from("companies").select("is_internal, pay_per_job, payment_method_id, payment_ready_at").eq("id", profile.company_id).maybeSingle();
+    payPerJob = paysByCard(co);
+  }
 
   let rows = [], err = null;
   if (db) {

@@ -4,6 +4,7 @@ import { chargeSubmission, sendSubmissionEmails } from "../../../../lib/charges"
 import { alertNewSubmission } from "../../../../lib/alerts";
 import { generateLetter, companyForLetter } from "../../../../lib/letters";
 import { engineerForJob } from "../../../../lib/engineers";
+import { paysByCard } from "../../../../lib/payPerJob";
 import { recordLetter } from "../../../../lib/letterRecord";
 
 export const runtime = "nodejs";
@@ -28,7 +29,7 @@ export async function POST(req) {
   if (alreadyDone) {
     const { data: co } = sub.company_id ? await db.from("companies").select("*").eq("id", sub.company_id).maybeSingle() : { data: null };
     return NextResponse.json({ ok: true, ref: sub.ref, status: sub.status, payment_status: sub.payment_status, already: true,
-      pay_now: Boolean(co && co.pay_per_job && sub.status === "on_hold" && sub.payment_status !== "paid"), amount_cents: sub.amount_cents });
+      pay_now: Boolean(paysByCard(co) && sub.status === "on_hold" && sub.payment_status !== "paid"), amount_cents: sub.amount_cents });
   }
 
   const origin = new URL(req.url).origin;
@@ -46,7 +47,7 @@ export async function POST(req) {
       outcome = await chargeSubmission(db, { submission: sub, company, origin });
       await db.from("submissions").update(outcome).eq("id", sub.id);
     } catch (e) { console.error("charge failed", e); }
-    const payNow = Boolean(company && company.pay_per_job && outcome.status === "on_hold");
+    const payNow = Boolean(paysByCard(company) && outcome.status === "on_hold");
     try {
       // Pay-as-you-go jobs reach the engineer once paid (lib/payPerJob.js sends the alert then).
       if (!payNow) await alertNewSubmission(db, {
@@ -64,6 +65,6 @@ export async function POST(req) {
     if (!r.simulated) await recordLetter(db, ["id", sub.id], r);
   } catch (e) { console.error("letter failed", e); }
 
-  const payNow = Boolean(company && company.pay_per_job && outcome.status === "on_hold" && !sub.is_demo);
+  const payNow = Boolean(paysByCard(company) && outcome.status === "on_hold" && !sub.is_demo);
   return NextResponse.json({ ok: true, ref: sub.ref, status: outcome.status, payment_status: outcome.payment_status, pay_now: payNow, amount_cents: sub.amount_cents });
 }
