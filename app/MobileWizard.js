@@ -78,8 +78,9 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
     {
       title: "Home sketch & comments",
       render: () => (<>
-        <SketchLauncher form={form} />
-        <PhotoSlot big label="Home sketch" sub="Your drawing appears here once saved, or upload a photo of a hand drawing." items={sketch} onAdd={addSketch} onRemove={() => setSketch([])} max={1} sent={form.sentAhead} />
+        <SketchLauncher form={form}>
+          <PhotoSlot big label="Home sketch" sub="Your saved drawing, or a photo of a hand drawing." items={sketch} onAdd={addSketch} onRemove={() => { setSketch([]); form.setVal("sketchData", null); }} max={1} sent={form.sentAhead} />
+        </SketchLauncher>
         <div className="field" style={{ marginTop: 16 }}><label htmlFor="generalComments">General comments</label><textarea id="generalComments" value={f.generalComments} onChange={set("generalComments")} /></div>
       </>),
     },
