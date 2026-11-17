@@ -22,6 +22,7 @@ function roleNav(profile) {
     { href: "/admin/orders", label: "Orders" },
     { href: "/admin/review", label: "Review queue" },
     submit,
+    { href: "/?demo=1", label: "Practice job (demo)" },
     { href: "/admin/people", label: "People" },
     { href: "/admin/statements", label: "Statements" },
     { href: "/admin/reports", label: "Reports" },
@@ -55,7 +56,7 @@ export default function AppHeader({ title, profile: given, right, wide, minimal 
   }, [open]);
 
   const items = navFor(profile, minimal);
-  const isOn = (href) => (href === "/" ? path === "/" : path && path.startsWith(href));
+  const isOn = (href) => (href === "/" ? path === "/" : href.startsWith("/?") ? false : path && path.startsWith(href));
 
   return (
     <>
