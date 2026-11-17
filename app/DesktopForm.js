@@ -113,8 +113,9 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
 
             <fieldset>
               <legend>Sketch &amp; comments</legend>
-              <SketchLauncher form={form} />
-              <PhotoSlot label="Home sketch" sub="Your drawing appears here once saved. You can also upload a photo of a hand-drawn sketch." items={sketch} onAdd={addSketch} onRemove={() => setSketch([])} max={1} sent={form.sentAhead} />
+              <SketchLauncher form={form}>
+                <PhotoSlot label="Home sketch" sub="Your saved drawing, or a photo of a hand-drawn sketch." items={sketch} onAdd={addSketch} onRemove={() => { setSketch([]); form.setVal("sketchData", null); }} max={1} sent={form.sentAhead} />
+              </SketchLauncher>
               <div className="field" style={{ marginTop: 16 }}><label htmlFor="generalComments">General comments</label><textarea id="generalComments" value={f.generalComments} onChange={set("generalComments")} /></div>
             </fieldset>
 
