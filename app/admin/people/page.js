@@ -26,6 +26,20 @@ export default function People() {
     fetch("/api/admin/people").then((r) => r.json()).then(apply).catch((e) => setErr(String(e)));
   }, []);
 
+  // A company with no active owner yet (or a brand-new one): the first person is usually its owner.
+  const needsOwner = (companyId) => {
+    if (companyId === "__new") return true;
+    const c = companies.find((x) => x.id === companyId);
+    if (!c || c.is_internal) return false;
+    return !(people || []).some((p) => p.company_id === companyId && p.role === "company_owner" && p.active);
+  };
+  const [roleTouched, setRoleTouched] = useState(false);
+  function pickCompany(e) {
+    const companyId = e.target.value;
+    setForm((f) => ({ ...f, companyId, ...(!roleTouched && needsOwner(companyId) ? { role: "company_owner" } : {}) }));
+  }
+  const ownerHint = !STAFF.includes(form.role) && form.companyId && needsOwner(form.companyId);
+
   async function invite(e) {
     e.preventDefault();
     setBusy(true); setMsg(""); setErr("");
@@ -37,7 +51,7 @@ export default function People() {
     if (apply(d)) {
       setMsg(d.emailed ? `Invited ${form.email} and sent them a welcome email.`
         : `Added ${form.email}. The welcome email didn't send, so tell them to sign in at this portal with their email.`);
-      setForm(BLANK);
+      setForm(BLANK); setRoleTouched(false);
     }
   }
 
@@ -66,14 +80,14 @@ export default function People() {
               <div className="field"><label htmlFor="fullName">Full name</label>
                 <input id="fullName" value={form.fullName} onChange={set("fullName")} /></div>
               <div className="field"><label htmlFor="role">Role</label>
-                <select id="role" value={form.role} onChange={set("role")}>
+                <select id="role" value={form.role} onChange={(e) => { setRoleTouched(true); set("role")(e); }}>
                   <option value="inspector">Inspector</option>
                   <option value="company_owner">Company owner</option>
                   <option value="engineer">Engineer (reviews and certifies jobs)</option>
                   <option value="admin">Admin (House &amp; Home staff)</option>
                 </select></div>
               <div className="field"><label htmlFor="companyId" className={STAFF.includes(form.role) ? "" : "req"}>Company</label>
-                <select id="companyId" value={form.companyId} onChange={set("companyId")}>
+                <select id="companyId" value={form.companyId} onChange={pickCompany}>
                   <option value="">{STAFF.includes(form.role) ? "None" : "Choose a company"}</option>
                   {companies.map((c) => <option key={c.id} value={c.id}>{c.name}{c.is_internal ? " (House & Home)" : ""}</option>)}
                   <option value="__new">+ New company…</option>
@@ -83,6 +97,10 @@ export default function People() {
                   <input id="newCompany" value={form.newCompany} onChange={set("newCompany")} placeholder="e.g. StarCrest Inspections" /></div>
               )}
             </div>
+            {ownerHint && (form.role === "company_owner"
+              ? <p className="hint" style={{ marginTop: 0 }}>This company has no owner yet, so they'll be its <b>owner</b>: they set up billing and invite their own inspectors. They can still submit jobs themselves.</p>
+              : <p className="warnbox" style={{ marginTop: 0 }}>This company has no owner yet. The first person is usually the owner (sets up billing, invites the team, and can still inspect).{" "}
+                  <button type="button" className="linklike" onClick={() => setForm((f) => ({ ...f, role: "company_owner" }))}>Make them the owner</button></p>)}
             {err && <p className="err">{err}</p>}
             {msg && <p className="ok-msg">{msg}</p>}
             <button className="btn" type="submit" disabled={busy}>{busy ? "Inviting…" : "Send invite"}</button>
