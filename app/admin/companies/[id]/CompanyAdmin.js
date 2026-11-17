@@ -190,7 +190,7 @@ function PaymentCard({ c, onSave }) {
       </div>
       <p className="hint" style={{ marginTop: 0 }}>{c.pay_per_job
         ? "After submitting, they pay by card on the job's pay page (also emailed). The job goes to the engineer once paid."
-        : "Each submission is charged to the saved bank account or card."}</p>
+        : c.payment_ready_at ? "Each submission is charged to the saved bank account or card." : "Each submission is charged to the saved bank account or card. Until one is saved, they pay by card after each submission."}</p>
       <h3 style={{ fontSize: "1rem", marginTop: 14 }}>Payment method on file</h3>
       {c.payment_ready_at ? (
         <>
