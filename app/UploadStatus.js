@@ -32,3 +32,19 @@ export default function UploadStatus({ form }) {
   }[u.phase] || "";
   return <div className="up-status">{text}</div>;
 }
+
+// How this job will be paid, shown on Review & submit (matches lib/payPerJob.js paysByCard).
+export function PayNote({ co, coName, price }) {
+  const amt = `$${Number(price || 0).toFixed(2)}`;
+  const text = co && !co.is_internal
+    ? (co.pays_by_card
+      ? `After you submit, you'll pay ${amt} by card on the next screen. The job goes to the engineer once it's paid.`
+      : `Charged to ${co.name}'s ${co.payment_method_label || "payment method on file"} when you submit.`)
+    : `Charged to ${coName || "the company"}'s payment method on file, or paid by card after you submit if they don't have one saved.`;
+  return <div className="lock"><span>{text}</span></div>;
+}
+
+// Shown while a job is being sent or paid for.
+export function DontLeave() {
+  return <p className="dont-leave" role="status"><b>Please wait.</b> Don't close this page or tap Back until you see the confirmation.</p>;
+}

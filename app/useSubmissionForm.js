@@ -213,6 +213,13 @@ export function useSubmissionForm(profile) {
   const [progress, setProgress] = useState(0);
   const [upload, setUpload] = useState(null); // live status from the queue
   const [result, setResult] = useState(null);
+  // While sending, ask the browser to warn before leaving or reloading the page.
+  useEffect(() => {
+    if (!busy) return;
+    const warn = (e) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [busy]);
 
   function onProgress(st) {
     setUpload(st);
