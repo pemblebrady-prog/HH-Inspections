@@ -21,7 +21,7 @@ export default async function OrderPage({ params }) {
   const ref = decodeURIComponent(params.ref);
   const { data: o } = await db.from("orders").select("*, job:submissions!orders_submission_id_fkey(ref, status)").eq("ref", ref).maybeSingle();
   if (!o) notFound();
-  const { data: people } = await db.from("profiles").select("id, full_name, email, role, company:companies(name, is_internal)").eq("active", true).in("role", ["inspector", "admin"]).order("full_name");
+  const { data: people } = await db.from("profiles").select("id, full_name, email, role, company:companies(name, is_internal)").eq("active", true).in("role", ["inspector", "admin", "engineer"]).order("full_name");
   const r = o.requester || {}, oc = o.occupant || {}, a = o.access || {};
 
   return (

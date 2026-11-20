@@ -14,7 +14,9 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: "auto" }); }, [step]);
   const cls = (k) => "field" + (invalid[k] ? " invalid" : "");
   const co = form.profile && form.profile.company;
-  const internal = Boolean(co && co.is_internal);
+  // House & Home staff without a company submit House & Home jobs (no charge) unless they pick a company.
+  const staffOwn = !co && form.profile && ["admin", "engineer"].includes(form.profile.role) && !f.inspectionCompany;
+  const internal = Boolean((co && co.is_internal) || staffOwn);
   const coName = co && !co.is_internal ? co.name : f.inspectionCompany;
   const price = co && co.price_cents != null ? co.price_cents / 100 : Number(FEE);
 
