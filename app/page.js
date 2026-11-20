@@ -11,9 +11,9 @@ export default async function Page() {
   if (authEnabled) {
     profile = await getCurrentProfile();
     if (!profile) redirect("/login");
-    if (profile.role === "engineer") redirect("/admin/review"); // engineers review; they don't submit jobs
-    // First sign-in: finish setup before submitting (admins skip this).
-    if (profile.role !== "admin" && !profile.onboarded_at) redirect("/welcome");
+    // Engineers can submit their own inspections too (Ron inspects as well as certifies).
+    // First sign-in: finish setup before submitting (House & Home staff skip this).
+    if (!["admin", "engineer"].includes(profile.role) && !profile.onboarded_at) redirect("/welcome");
   }
   return <PortalPage profile={profile} />;
 }

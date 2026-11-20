@@ -32,6 +32,11 @@ async function recordInDatabase({ profile, data, date, isDemo, folderId, driveLi
       const { data: c } = await db.from("companies").select("id, name, is_internal, price_cents").eq("name", data.inspectionCompany).maybeSingle();
       company = c ? await withEffectivePrice(db, c) : null;
     }
+    // House & Home staff (admins, engineers) with no company: their own jobs are House & Home's, never charged.
+    if (!company && profile && ["admin", "engineer"].includes(profile.role)) {
+      const { data: hh } = await db.from("companies").select("id, name, is_internal, price_cents").eq("is_internal", true).limit(1).maybeSingle();
+      if (hh) company = hh;
+    }
     const internal = company ? company.is_internal : false;
     const amount = company ? company.price_cents : await getDefaultPriceCents(db);
     const orderId = typeof data.orderId === "string" && /^[0-9a-f-]{36}$/i.test(data.orderId) ? data.orderId : null;

@@ -31,7 +31,7 @@ function roleNav(profile) {
     { href: "/admin/email", label: "Google & email" },
     { href: "/tracker", label: "Old tracker" },
   ];
-  if (profile.role === "engineer") return [{ href: "/admin/review", label: "Review queue" }, { href: "/admin/engineer", label: "My PE details" }];
+  if (profile.role === "engineer") return [{ href: "/admin/review", label: "Review queue" }, { href: "/", label: "Submit a job" }, { href: "/jobs", label: "My jobs" }, { href: "/admin/engineer", label: "My PE details" }];
   if (profile.role === "company_owner") return [submit, { ...jobs, label: "Company jobs" }, { href: "/team", label: "My team" }, { href: "/billing", label: "Billing" }];
   return [submit, jobs];
 }

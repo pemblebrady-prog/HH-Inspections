@@ -19,7 +19,7 @@ export default async function MyJobs() {
   if (!authEnabled) redirect("/");
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login?next=/jobs");
-  if (profile.role === "admin" || profile.role === "engineer") redirect("/admin/review");
+  if (profile.role === "admin") redirect("/admin/review"); // engineers see the jobs they submitted, like inspectors
   const owner = profile.role === "company_owner";
   const db = createAdminClient();
   // Jobs waiting for a card payment get a Pay now button (pay-as-you-go, or no saved payment method).
