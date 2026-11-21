@@ -5,6 +5,7 @@ import { buildStatement, statementHtml, previousMonth } from "../../lib/activity
 import { statementCompanyId } from "../../lib/statementAccess";
 import AppHeader from "../AppHeader";
 import PrintButton from "./PrintButton";
+import { isOffice } from "../../lib/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export default async function StatementPage({ searchParams }) {
   if (!db) notFound();
   let st;
   try { st = await buildStatement(db, companyId, month); } catch { notFound(); }
-  const back = profile.role === "admin" ? "/admin/statements" : "/billing";
+  const back = isOffice(profile) ? "/admin/statements" : "/billing";
   return (
     <>
       <div className="no-print"><AppHeader title="Statement" profile={profile} wide /></div>

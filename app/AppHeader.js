@@ -6,7 +6,7 @@ import { ViewAsBanner } from "./ViewAs";
 
 // Where the logo goes for each role.
 export function homeFor(profile) {
-  if (profile && (profile.role === "admin" || profile.role === "engineer")) return "/admin/review";
+  if (profile && ["admin", "office_manager", "engineer"].includes(profile.role)) return "/admin/review";
   return "/";
 }
 
@@ -18,7 +18,7 @@ function navFor(profile, minimal) {
 function roleNav(profile) {
   const submit = { href: "/", label: "Submit a job" };
   const jobs = { href: "/jobs", label: "My jobs" };
-  if (profile.role === "admin") return [
+  if (profile.role === "admin" || profile.role === "office_manager") return [
     { href: "/admin/orders", label: "Orders" },
     { href: "/admin/review", label: "Review queue" },
     submit,
@@ -28,11 +28,11 @@ function roleNav(profile) {
     { href: "/admin/reports", label: "Reports" },
     { href: "/admin/companies", label: "Companies" },
     { href: "/admin/engineer", label: "Engineers" },
-    { href: "/admin/email", label: "Google & email" },
+    ...(profile.role === "admin" ? [{ href: "/admin/email", label: "Google & email" }] : []),
     { href: "/tracker", label: "Old tracker" },
   ];
   if (profile.role === "engineer") return [{ href: "/admin/review", label: "Review queue" }, { href: "/", label: "Submit a job" }, { href: "/jobs", label: "My jobs" }, { href: "/admin/engineer", label: "My PE details" }];
-  if (profile.role === "company_owner") return [submit, { ...jobs, label: "Company jobs" }, { href: "/team", label: "My team" }, { href: "/billing", label: "Billing" }];
+  if (profile.role === "company_owner" || profile.role === "company_office") return [submit, { ...jobs, label: "Company jobs" }, { href: "/team", label: "My team" }, { href: "/billing", label: "Billing" }, { href: "/notifications", label: "Notifications" }];
   return [submit, jobs];
 }
 

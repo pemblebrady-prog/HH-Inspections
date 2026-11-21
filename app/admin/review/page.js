@@ -3,6 +3,7 @@ import { StatusPill } from "../../../lib/statusLabels";
 import AdminHeader from "../../AdminHeader";
 import QueueRefresh from "./QueueRefresh";
 import { listEngineers, engineerIssues, ENGINEER_COLS } from "../../../lib/engineers";
+import { isOffice } from "../../../lib/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,7 @@ export default async function ReviewQueue({ searchParams }) {
     const { data: meEng } = profile.viewingAs ? { data: (await listEngineers(db))[0] || null }
       : await db.from("profiles").select(ENGINEER_COLS).eq("id", profile.id).maybeSingle();
     if (meEng) issues = engineerIssues(meEng).map((t) => ({ t, href: "/admin/engineer" }));
-  } else if (db && profile && profile.role === "admin") {
+  } else if (db && isOffice(profile)) {
     const engs = await listEngineers(db);
     issues = engs.flatMap((e) => engineerIssues(e).map((t) => ({ t, href: `/admin/engineer?id=${e.id}` })));
   }
@@ -95,7 +96,7 @@ export default async function ReviewQueue({ searchParams }) {
             </table>
           </div>
         )}
-        {profile && profile.role === "admin" && <p className="hint" style={{ marginTop: 10 }}>Jobs submitted before sign-in was added are still in the old <a href="/tracker">tracker</a> until records are moved into the database.</p>}
+        {isOffice(profile) && <p className="hint" style={{ marginTop: 10 }}>Jobs submitted before sign-in was added are still in the old <a href="/tracker">tracker</a> until records are moved into the database.</p>}
       </div>
     </>
   );

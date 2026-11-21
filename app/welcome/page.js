@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentProfile } from "../../lib/supabase/server";
 import { authEnabled } from "../../lib/supabase/config";
 import Welcome from "./Welcome";
+import { isStaff } from "../../lib/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,6 @@ export default async function WelcomePage() {
   if (!authEnabled) redirect("/");
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login?next=/welcome");
-  if (profile.role === "admin" || profile.role === "engineer" || profile.onboarded_at) redirect("/");
+  if (isStaff(profile) || profile.onboarded_at) redirect("/");
   return <Welcome profile={profile} />;
 }

@@ -6,6 +6,7 @@ import MobileWizard from "./MobileWizard";
 import AppHeader from "./AppHeader";
 import UploadStatus from "./UploadStatus";
 import { FEE } from "../lib/formConfig";
+import { isOffice } from "../lib/roles";
 
 export default function PortalPage({ profile }) {
   const form = useSubmissionForm(profile);
@@ -100,7 +101,7 @@ function Success({ result, profile }) {
             )}
             <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
               <button className="btn ghost" onClick={() => window.location.reload()}>{result.demo ? "Run another demo" : "Start another submission"}</button>
-              {profile && profile.role !== "admin" && !result.demo && <a className="btn ghost" href="/jobs">View my jobs</a>}
+              {profile && !isOffice(profile) && !result.demo && <a className="btn ghost" href="/jobs">View my jobs</a>}
             </div>
           </div>
         </section>

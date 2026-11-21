@@ -417,3 +417,12 @@ html.embedded .shell { padding-top: 8px; padding-bottom: 24px; }
 .offline-bar{position:sticky;top:0;z-index:95;background:#3d4a52;color:#fff;font-size:13px;line-height:1.4;padding:7px 14px calc(7px) ;text-align:center;padding-top:calc(7px + env(safe-area-inset-top))}
 .offline-bar b{color:#FFD9A8}
 @media print{.offline-bar{display:none !important}}
+
+/* Notification switches */
+.notify-list{list-style:none;margin:0 0 10px;padding:0}
+.notify-list li{border-top:1px solid var(--line);padding:12px 0}
+.notify-list li:first-child{border-top:0}
+.notify-list label{display:flex;gap:12px;align-items:flex-start;cursor:pointer;margin:0}
+.notify-list input{width:20px;height:20px;margin-top:2px;flex:none}
+.notify-list b{display:block}
+.notify-list small{display:block;color:var(--muted);font-size:13px;margin-top:2px}

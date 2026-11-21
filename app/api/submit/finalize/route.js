@@ -6,6 +6,7 @@ import { generateLetter, companyForLetter } from "../../../../lib/letters";
 import { engineerForJob } from "../../../../lib/engineers";
 import { paysByCard } from "../../../../lib/payPerJob";
 import { recordLetter } from "../../../../lib/letterRecord";
+import { isOffice } from "../../../../lib/roles";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -23,7 +24,7 @@ export async function POST(req) {
   const { data: sub } = await db.from("submissions").select("*").eq("ref", b.ref).maybeSingle();
   if (!sub) return NextResponse.json({ ok: false, error: "Submission not found" }, { status: 404 });
   const me = auth.profile;
-  if (me && me.role !== "admin" && sub.inspector_id !== me.id) return NextResponse.json({ ok: false, error: "Not your submission" }, { status: 403 });
+  if (me && !isOffice(me) && sub.inspector_id !== me.id) return NextResponse.json({ ok: false, error: "Not your submission" }, { status: 403 });
 
   const alreadyDone = sub.status !== "uploading" && (sub.letter_link || (Array.isArray(sub.photos) && sub.photos.length));
   const answerAlready = async () => {

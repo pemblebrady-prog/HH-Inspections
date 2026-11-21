@@ -10,7 +10,7 @@ export async function GET() {
   const p = auth.profile;
   if (!p) return NextResponse.json({ ok: true, profile: null });
   return NextResponse.json({ ok: true, profile: {
-    id: p.id, email: p.email, full_name: p.full_name, role: p.role,
+    id: p.id, email: p.email, full_name: p.full_name, role: p.role, site_role: p.site_role || null, company_role: p.company_role || null,
     company: p.company ? { name: p.company.name, is_internal: p.company.is_internal } : null,
     viewingAs: p.viewingAs || null, realRole: p.realRole || p.role,
   } });

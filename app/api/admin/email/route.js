@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const auth = await requireUser(["admin"]);
+  const auth = await requireUser(["admin!"]);
   if (auth.error) return auth.error;
   const g = await getGmailSender({ fresh: true }).catch(() => null);
   const d = await getDriveOwner({ fresh: true }).catch(() => null);
@@ -18,7 +18,7 @@ export async function GET() {
 
 // { action: "test", to } or { action: "disconnect" }
 export async function POST(req) {
-  const auth = await requireUser(["admin"]);
+  const auth = await requireUser(["admin!"]);
   if (auth.error) return auth.error;
   let b; try { b = await req.json(); } catch { return NextResponse.json({ ok: false, error: "Bad request" }, { status: 400 }); }
   if (b.action === "disconnect") { await disconnectGmail(); return NextResponse.json({ ok: true }); }

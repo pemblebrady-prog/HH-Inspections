@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../../lib/supabase/server";
 import { ENGINEER_COLS, listEngineers } from "../../../../lib/engineers";
 import { getDrive, rootFolderId, uploadPrivateImage } from "../../../../lib/drive";
+import { isOffice } from "../../../../lib/roles";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ async function ctx(req) {
   if (!db) return { error: NextResponse.json({ ok: false, error: "Database isn't configured." }, { status: 500 }) };
   const me = auth.profile;
   const asked = new URL(req.url).searchParams.get("id");
-  let id = me && me.role === "admin" ? asked || me.id : me && me.id;
+  let id = isOffice(me) ? asked || me.id : me && me.id;
   if (me && me.viewingAs) { const [main] = await listEngineers(db); id = main ? main.id : id; } // admin previewing as engineer: show the main engineer
   if (!id) return { error: NextResponse.json({ ok: false, error: "No engineer selected." }, { status: 400 }) };
   const { data: person, error } = await db.from("profiles").select(ENGINEER_COLS).eq("id", id).maybeSingle();
@@ -29,14 +30,14 @@ export async function GET(req) {
   // Admin with no one picked: list the engineers to choose from.
   const auth = await requireUser(["admin", "engineer"]);
   if (auth.error) return auth.error;
-  if (auth.profile && auth.profile.role === "admin" && !new URL(req.url).searchParams.get("id")) {
+  if (isOffice(auth.profile) && !new URL(req.url).searchParams.get("id")) {
     const db = createAdminClient();
     const { data, error } = await db.from("profiles").select(ENGINEER_COLS).eq("role", "engineer").order("created_at");
     if (error) return NextResponse.json({ ok: false, error: /pe_|stamp/i.test(error.message) ? "Run database update 0010 in Supabase first." : error.message }, { status: 500 });
     return NextResponse.json({ ok: true, engineers: data || [] });
   }
   const c = await ctx(req); if (c.error) return c.error;
-  return NextResponse.json({ ok: true, engineer: c.person, canPickOthers: c.me && c.me.role === "admin" });
+  return NextResponse.json({ ok: true, engineer: c.person, canPickOthers: isOffice(c.me) });
 }
 
 // Body: { fullName?, title?, licenseNumber?, licenseState?, licenseExpires? (YYYY-MM-DD) }

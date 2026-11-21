@@ -30,8 +30,8 @@ export default async function Reports({ searchParams }) {
   } else err = "Database isn't configured.";
 
   const qs = new URLSearchParams(Object.entries(f).filter(([, v]) => v)).toString();
-  const inspectors = (people || []).filter((p) => ["inspector", "company_owner", "admin"].includes(p.role));
-  const engineers = (people || []).filter((p) => ["engineer", "admin"].includes(p.role));
+  const inspectors = (people || []).filter((p) => ["inspector", "company_owner", "company_office", "admin", "office_manager", "engineer"].includes(p.role));
+  const engineers = (people || []).filter((p) => ["engineer"].includes(p.role));
   const quick = [["This month", monthRange(0)], ["Last month", monthRange(-1)], ["This year", { from: `${monthRange(0).from.slice(0, 4)}-01-01`, to: "" }]];
   const sel = (name, value, opts, all) => (
     <select name={name} defaultValue={value}><option value="">{all}</option>{opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
