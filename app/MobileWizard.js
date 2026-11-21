@@ -39,7 +39,7 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
       </>),
     },
     {
-      title: "Home basics",
+      title: "Home basics", hudCheck: true,
       render: () => (<>
         <Field id="ageOfHome" label="Age of home" f={f} set={set} placeholder="e.g. 1998" />
         <div className="row c2">
@@ -71,6 +71,7 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
         <Select s={byId("piersCondition")} f={f} set={set} />
         <Select s={byId("skirtingCondition")} f={f} set={set} />
         <Select s={byId("axles")} f={f} set={set} />
+        <Select s={byId("homeMoved")} f={f} set={set} />
       </>),
     },
     { title: "Skirting, venting & framing", render: () => <>{["skirting", "venting", "framing"].map((id) => <Chips key={id} m={MULTI.find((x) => x.id === id)} f={f} toggle={toggle} />)}</> },
@@ -124,6 +125,7 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
 
   function next() {
     if (cur.required && !validate(cur.required)) return;
+    if (cur.hudCheck && !form.confirmHud()) return;
     if (i < screens.length - 1) setI(i + 1);
   }
   function submit() { payAndSubmit(); }

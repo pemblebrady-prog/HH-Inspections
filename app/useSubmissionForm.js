@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, compress } from "../lib/formConfig";
+import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, compress, hudProblems } from "../lib/formConfig";
 import { DEMO_REPORT, isDemoUrl, loadDemoPhoto } from "../lib/demoData";
 import { idbGet, idbSet, idbDel, savePhoto, loadPhoto, deletePhoto, newId } from "../lib/offlineStore";
 import { runQueue, unfinishedQueues, queueKey } from "../lib/uploadQueue";
@@ -111,21 +111,23 @@ export function useSubmissionForm(profile) {
       if (cancelled) return;
       if (pending.length) { loaded.current = true; resumeUpload(pending[0]); return; }
 
-      // Opened from an assigned order (/?order=<id>): start a fresh job pre-filled from it.
+      // Opened from an assigned order (/?order=<id>). If this phone already has a draft for that order
+      // (the page was closed, reloaded, or they had to sign in again), pick up where they left off;
+      // otherwise start a fresh job pre-filled from the order.
       const orderId = new URLSearchParams(window.location.search).get("order");
-      if (orderId) {
-        try {
-          const d = await fetch(`/api/orders/prefill?id=${encodeURIComponent(orderId)}`).then((r) => r.json());
-          if (!cancelled && d.ok) {
-            setF((cur) => ({ ...cur, ...Object.fromEntries(Object.entries(d.prefill).filter(([, val]) => val !== "")) }));
-            setOrderInfo(d.info);
-          }
-        } catch { /* fall through to a blank form */ }
-        loaded.current = true;
-        return;
-      }
       const d = await idbGet(DRAFT_KEY);
       if (cancelled) return;
+      const draftForOrder = Boolean(orderId && d && d.f && d.f.orderId === orderId);
+      if (orderId) {
+        try {
+          const o = await fetch(`/api/orders/prefill?id=${encodeURIComponent(orderId)}`).then((r) => r.json());
+          if (!cancelled && o.ok) {
+            setOrderInfo(o.info);
+            if (!draftForOrder) setF((cur) => ({ ...cur, ...Object.fromEntries(Object.entries(o.prefill).filter(([, val]) => val !== "")) }));
+          }
+        } catch { /* offline or not found: the saved draft (if any) still loads below */ }
+        if (!draftForOrder) { loaded.current = true; return; }
+      }
       if (d && d.f) {
         const loadList = async (list) => {
           const out = [];
@@ -248,7 +250,20 @@ export function useSubmissionForm(profile) {
     if (pending.length) await resumeUpload(pending[0]);
   }
 
+  // Warn once (per set of answers) when the home can't be HUD certified; the inspector can go on anyway.
+  const hudOk = useRef("");
+  function confirmHud() {
+    const probs = hudProblems(f);
+    if (!probs.length) return true;
+    const sig = probs.join("|");
+    if (hudOk.current === sig) return true;
+    const yes = window.confirm(`This home can't be HUD certified: ${probs.join("; ")}.\n\nDo you wish to proceed anyway?`);
+    if (yes) hudOk.current = sig;
+    return yes;
+  }
+
   async function payAndSubmit() {
+    if (!confirmHud()) return false;
     setBusy(true); setProgress(0); setUpload(null);
     const items = [];
     sketch.forEach((p) => items.push({ photoId: p.id, name: "Home Sketch.jpg", label: "Home Sketch", slot: "sketch", done: false }));
@@ -265,5 +280,5 @@ export function useSubmissionForm(profile) {
 
   return { f, set, setVal, toggle, companies, sketch, addSketch, setSketch: clearSketch, photos, addTo, removeFrom,
     invalid, validate, totalPhotos, busy, progress, upload, result, payAndSubmit, demo, demoLoading, fillDemo, profile,
-    restoredAt, startOver, leaveOrder, resuming, retryUpload, orderInfo, checks, tagFind, sentAhead };
+    restoredAt, startOver, leaveOrder, resuming, retryUpload, orderInfo, checks, tagFind, sentAhead, confirmHud };
 }

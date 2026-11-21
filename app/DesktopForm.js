@@ -121,7 +121,7 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
               <div className="field" style={{ marginTop: 16 }}><label htmlFor="generalComments">General comments</label><textarea id="generalComments" value={f.generalComments} onChange={set("generalComments")} /></div>
             </fieldset>
 
-            <div className="actions"><span /><button className="btn" onClick={() => { if (validate(["propertyAddress", "inspectorName", "clientName", "sendReportTo", "date"])) setStep(2); }}>Continue to photos →</button></div>
+            <div className="actions"><span /><button className="btn" onClick={() => { if (validate(["propertyAddress", "inspectorName", "clientName", "sendReportTo", "date"]) && form.confirmHud()) setStep(2); }}>Continue to photos →</button></div>
           </section>
         )}
 

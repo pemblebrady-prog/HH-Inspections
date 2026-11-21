@@ -254,6 +254,15 @@ table.track a:hover{text-decoration:underline}
 .ios-share::after{content:"";position:absolute;left:50%;top:-8px;width:6px;height:6px;border-left:1.6px solid var(--steel);border-top:1.6px solid var(--steel);transform:translateX(-50%) rotate(45deg)}
 /* keep the mobile wizard's bottom buttons clear of the sheet */
 body:has(.wiz-nav) .install-sheet{bottom:calc(84px + env(safe-area-inset-bottom))}
+/* slim reminder after "Not now" (still in the browser) */
+.install-bar{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:80;max-width:520px;margin:0 auto;
+  display:flex;align-items:center;gap:8px;background:#EAF4F8;border:1px solid #BFDCE8;border-radius:10px;padding:7px 6px 7px 12px;
+  font-size:12.5px;line-height:1.35;color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.12)}
+.install-bar span{flex:1}
+.install-bar-how{flex:none;background:var(--steel);color:#fff;border:0;border-radius:7px;padding:6px 9px;font-size:12.5px;font-weight:600;cursor:pointer}
+.install-bar-x{flex:none;background:none;border:0;font-size:20px;color:var(--muted);padding:0 6px;cursor:pointer}
+body:has(.wiz-nav) .install-bar{bottom:calc(80px + env(safe-area-inset-bottom))}
+@media print{.install-bar{display:none !important}}
 
 /* Upload status / restored draft */
 .up-status{font-size:14px;line-height:1.45;margin:8px 0 4px;color:var(--ink)}
@@ -400,3 +409,6 @@ html.embedded .shell { padding-top: 8px; padding-bottom: 24px; }
 .linklike{background:none;border:0;padding:0;color:var(--steel);text-decoration:underline;cursor:pointer;font:inherit;font-size:.95rem}
 .sk-launch-big svg{flex:0 0 38px;width:38px;height:38px}
 .warnbox{background:#fff6dc;border:1px solid #e9cf86;color:#5a4410;padding:9px 12px;border-radius:6px;font-size:.93rem}
+
+.sk-save-bottom{padding:10px 0 4px}
+.sk-save-bottom .btn{width:100%;justify-content:center;text-align:center}
