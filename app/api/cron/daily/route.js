@@ -20,7 +20,7 @@ export async function GET(req) {
   if (!db) return NextResponse.json({ ok: false, error: "Database isn't configured." }, { status: 500 });
   const r = await sendLicenseWarnings(db, { origin: new URL(req.url).origin });
   const drive = await getDrive();
-  r.stagedPhotosRemoved = drive ? await cleanStaging(drive, 14).catch((e) => { console.error("staging cleanup", e.message); return 0; }) : 0;
+  r.stagedPhotosRemoved = drive ? await cleanStaging(drive, 2).catch((e) => { console.error("staging cleanup", e.message); return 0; }) : 0;
   r.payReminders = await sendPayReminders(db, { origin: new URL(req.url).origin }).catch((e) => { console.error("pay reminders", e.message); return 0; });
   r.followupReminders = await sendFollowupReminders(db, { origin: new URL(req.url).origin }).catch((e) => { console.error("follow-up reminders", e.message); return 0; }); // only if turned on
   console.log("daily", JSON.stringify(r));
