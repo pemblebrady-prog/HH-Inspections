@@ -9,7 +9,7 @@ export const TAGS = [
   ["A", "Entry Access", "k"], ["T", "Tie Down", "k"], ["C", "Cert. Label", "k"], ["AS", "Attached St.", "k"],
   ["P", "Pier", "r"], ["B", "Beam", "r"], ["R", "Railing", "r"], ["S", "Stairs", "r"], ["W", "Wood", "r"],
   ["K", "Skirting", "r"], ["M", "Belly Wrap", "r"], ["I", "Insulation", "r"], ["D", "Drainage", "r"],
-  ["N", "No Access", "r"], ["V", "Vents", "r"],
+  ["N", "No Access", "r"], ["V", "Vents", "r"], ["AX", "Axles", "r"],
 ];
 const INK = "#1d2a33", RED = "#b3261e", FILL = "#cfe0ea", FILL2 = "#dfeaf0";
 // Attached structures: [type, typical starting size as [along the home, out from the home] in feet, quick sizes].
@@ -352,6 +352,10 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
             <p className="sk-hint">Tap a tag, then tap the drawing to place as many as you need. Drag to move. Tap anything to edit or delete it.</p>
           </>
         )}
+        {/* Second save button down here, so nobody has to scroll back up (Brian, Nov 19). */}
+        <div className="sk-save-bottom">
+          <button type="button" className="btn" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save sketch"}</button>
+        </div>
       </div>
 
       {/* What gets saved: the drawing plus the key, off-screen. */}

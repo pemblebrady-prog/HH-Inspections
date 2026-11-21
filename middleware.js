@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const COOKIE_OPTIONS = { maxAge: 90 * 24 * 60 * 60, sameSite: "lax", path: "/" }; // keep signed in 90 days (lib/supabase/config.js)
 
 // Keeps the sign-in session fresh and sends signed-out visitors to /login.
 // Pages and API routes also check access themselves; this is the first gate.
@@ -11,6 +12,7 @@ export async function middleware(request) {
 
   let response = NextResponse.next({ request });
   const supabase = createServerClient(URL_, KEY, {
+    cookieOptions: COOKIE_OPTIONS,
     cookies: {
       getAll() { return request.cookies.getAll(); },
       setAll(list) {
@@ -21,7 +23,13 @@ export async function middleware(request) {
     },
   });
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user: found }, error: authErr } = await supabase.auth.getUser();
+  // A brief outage or slow connection to the sign-in service must not sign anyone out (and lose
+  // their place): if they have a session cookie and the check failed for a non-auth reason, let the
+  // page load; the page and its API calls check the session again.
+  const hasSession = request.cookies.getAll().some((c) => /^sb-.*-auth-token/.test(c.name));
+  const transient = authErr && (authErr.status == null || authErr.status >= 500 || /fetch|network|timeout/i.test(authErr.message || ""));
+  const user = found || (hasSession && transient ? { id: "pending" } : null);
   const path = request.nextUrl.pathname;
   const isPublic = path === "/login" || path === "/privacy" || path === "/terms" || path.startsWith("/auth/") || path.startsWith("/api/auth/") || path === "/api/health" || path === "/api/stripe/webhook" || path.startsWith("/api/cron/") || path.startsWith("/request/") || path === "/api/orders/intake" || path === "/request" || path === "/api/requests";
 

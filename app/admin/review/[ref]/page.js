@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getCurrentProfile, createAdminClient } from "../../../../lib/supabase/server";
-import { SINGLE, MULTI, DETAILS } from "../../../../lib/formConfig";
+import { SINGLE, MULTI, DETAILS, hudProblems } from "../../../../lib/formConfig";
 import { buildFindings } from "../../../../lib/letterContent";
 import { StatusPill } from "../../../../lib/statusLabels";
 import AdminHeader from "../../../AdminHeader";
@@ -47,6 +47,7 @@ export default async function ReviewJob({ params }) {
     ...SINGLE.slice(1).map((s) => [s.label, f[s.id]]),
     ...MULTI.map((m) => [m.label, (f[m.id] || []).join(", ")]),
     ["Comments", f.generalComments],
+    ...(hudProblems(f).length ? [["HUD warning", `Can't be HUD certified: ${hudProblems(f).join("; ")}. The inspector chose to go ahead.`]] : []),
   ];
 
   return (
