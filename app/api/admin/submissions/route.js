@@ -51,7 +51,7 @@ export async function PATCH(req) {
       if (r.needsConfirm) return NextResponse.json({ ok: false, needsConfirm: true, problems: r.problems });
       if (!r.ok) return NextResponse.json({ ok: false, error: "Couldn't send to anyone: " + r.results.map((x) => `${x.to}: ${x.error}`).join("; "), results: r.results }, { status: 400 });
       const { data: fresh } = await db.from("submissions").select("*").eq("id", sub.id).single();
-      return NextResponse.json({ ok: true, submission: fresh, results: r.results, pdfLink: r.pdfLink });
+      return NextResponse.json({ ok: true, submission: fresh, results: r.results, pdfLink: r.pdfLink, stamped: r.stamped });
     } else if (b.action === "waive") {
       patch = { payment_status: "waived", ...(sub.status === "on_hold" ? { status: "submitted" } : {}) };
     } else if (b.action === "charge") {

@@ -426,3 +426,7 @@ html.embedded .shell { padding-top: 8px; padding-bottom: 24px; }
 .notify-list input{width:20px;height:20px;margin-top:2px;flex:none}
 .notify-list b{display:block}
 .notify-list small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+
+/* Refund history on the job page */
+.refund-list{list-style:none;margin:10px 0 0;padding:0}
+.refund-list li{border-top:1px solid var(--line);padding:7px 0;font-size:14px}

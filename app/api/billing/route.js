@@ -8,9 +8,10 @@ export const dynamic = "force-dynamic";
 export async function GET(req) {
   const c = await billingContext(new URL(req.url).searchParams.get("companyId"));
   if (c.error) return c.error;
-  const { data: payments } = await c.db.from("payments")
-    .select("id, amount_cents, method, status, created_at, failure_reason, submission:submissions(ref, property_address)")
-    .eq("company_id", c.company.id).order("created_at", { ascending: false }).limit(50);
+  const cols = "id, amount_cents, method, status, created_at, failure_reason, submission:submissions(ref, property_address)";
+  const q = (cs) => c.db.from("payments").select(cs).eq("company_id", c.company.id).order("created_at", { ascending: false }).limit(50);
+  let { data: payments, error: pErr } = await q(cols + ", refunded_cents");
+  if (pErr) ({ data: payments } = await q(cols)); // before migration 0017
   // If a bank account is waiting on micro-deposits, find Stripe's verification page.
   let verifyUrl = null;
   if (stripeEnabled() && c.company.stripe_customer_id && !c.company.payment_ready_at && c.company.payment_status_note) {

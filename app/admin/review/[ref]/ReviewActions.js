@@ -35,8 +35,11 @@ export default function ReviewActions({ job }) {
     }
     if (d.results) setResults(d.results);
     if (!d.ok) { setErr(d.error || "Couldn't send"); return; }
-    setMsg("Final letter sent. The job is marked delivered.");
-    setTimeout(() => window.location.reload(), 2500);
+    const stampNote = d.stamped === "placed" ? " Your stamp and signature were added to the PDF."
+      : d.stamped === "box not found" ? " Note: the grey stamp box wasn't in the letter, so no stamp was added automatically (fine if you added it by hand)."
+      : d.stamped && d.stamped !== "no images" ? " Note: the stamp couldn't be added automatically; check the PDF in the job's Drive folder." : "";
+    setMsg("Final letter sent. The job is marked delivered." + stampNote);
+    setTimeout(() => window.location.reload(), stampNote ? 6000 : 2500);
   }
 
   async function act(action, extra = {}) {
