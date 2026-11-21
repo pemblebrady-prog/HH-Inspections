@@ -71,6 +71,7 @@ export default async function Reports({ searchParams }) {
               <div><span>Charged</span><b>{money(data.totals.charged)}</b></div>
               <div><span>Paid</span><b>{money(data.totals.paid)}</b></div>
               {data.totals.refunded > 0 && <div><span>Refunded</span><b>{money(data.totals.refunded)}</b></div>}
+              {data.totals.fees > 0 && <div><span>Re-inspection fees paid</span><b>{money(data.totals.fees)}</b></div>}
               <div><span>Outstanding</span><b style={data.totals.outstanding ? { color: "var(--err)" } : undefined}>{money(data.totals.outstanding)}</b></div>
               <div><span>Delivered</span><b>{data.totals.delivered.toLocaleString()}</b></div>
             </div>

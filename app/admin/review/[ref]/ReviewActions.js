@@ -8,6 +8,7 @@ const NEXT = {
   delivered:    [["reopen", "Reopen", "ghost"]],
   on_hold:      [["start", "Start review anyway", "ghost"]],
   canceled:     [["reopen", "Restore", "ghost"]],
+  corrections:  [], // waiting for the follow-up (see Corrections below)
 };
 
 export default function ReviewActions({ job }) {
@@ -38,7 +39,7 @@ export default function ReviewActions({ job }) {
     const stampNote = d.stamped === "placed" ? " Your stamp and signature were added to the PDF."
       : d.stamped === "box not found" ? " Note: the grey stamp box wasn't in the letter, so no stamp was added automatically (fine if you added it by hand)."
       : d.stamped && d.stamped !== "no images" ? " Note: the stamp couldn't be added automatically; check the PDF in the job's Drive folder." : "";
-    setMsg("Final letter sent. The job is marked delivered." + stampNote);
+    setMsg((d.clear ? "Clear letter sent." : "Final letter sent.") + " The job is marked delivered." + stampNote);
     setTimeout(() => window.location.reload(), stampNote ? 6000 : 2500);
   }
 
@@ -58,20 +59,24 @@ export default function ReviewActions({ job }) {
     <div>
       <h3 style={{ marginTop: 0 }}>Actions</h3>
       <div className="stack">
-        {letter
-          ? <a className="btn" href={letter} target="_blank" rel="noreferrer">Open draft letter</a>
-          : <p className="hint">No draft letter yet.</p>}
-        <button className="btn ghost" type="button" disabled={!!busy} onClick={() => act("letter")}>
-          {busy === "letter" ? "Making letter…" : letter ? "Regenerate letter" : "Make draft letter"}
-        </button>
+        {job.status === "corrections"
+          ? <p className="hint" style={{ margin: 0 }}>Waiting for the corrections follow-up (see Corrections below).</p>
+          : <>
+            {letter
+              ? <a className="btn" href={letter} target="_blank" rel="noreferrer">{job.clear ? "Open clear letter" : "Open draft letter"}</a>
+              : <p className="hint">No draft letter yet.</p>}
+            <button className="btn ghost" type="button" disabled={!!busy} onClick={() => act("letter")}>
+              {busy === "letter" ? "Making letter…" : letter ? (job.clear ? "Remake clear letter" : "Regenerate letter") : "Make draft letter"}
+            </button>
+          </>}
         {job.drive_link && <a className="btn ghost" href={job.drive_link} target="_blank" rel="noreferrer">Open Drive folder</a>}
         {canSend && (
           <div className="send-box">
-            <b>{job.status === "delivered" ? "Send again" : "Send final letter"}</b>
+            <b>{job.status === "delivered" ? "Send again" : job.clear ? "Send clear letter" : "Send final letter"}</b>
             <p className="hint" style={{ margin: "4px 0 8px" }}>First add the PE stamp and signature in the Google Doc and delete the yellow DRAFT note. The letter is emailed as a PDF and saved to the Drive folder.</p>
             <label htmlFor="to" className="hint">Send to (one per line)</label>
             <textarea id="to" rows={3} value={to} onChange={(e) => setTo(e.target.value)} placeholder="client@example.com" />
-            <button className="btn" type="button" disabled={!!busy} onClick={() => send(false)}>{busy === "send" ? "Sending…" : job.status === "delivered" ? "Send again" : "Send final letter"}</button>
+            <button className="btn" type="button" disabled={!!busy} onClick={() => send(false)}>{busy === "send" ? "Sending…" : job.status === "delivered" ? "Send again" : job.clear ? "Send clear letter" : "Send final letter"}</button>
             {job.final_pdf_link && <a className="hint" href={job.final_pdf_link} target="_blank" rel="noreferrer">Last sent PDF</a>}
           </div>
         )}

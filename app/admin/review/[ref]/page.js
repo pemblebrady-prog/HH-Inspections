@@ -6,6 +6,9 @@ import { StatusPill } from "../../../../lib/statusLabels";
 import AdminHeader from "../../../AdminHeader";
 import ReviewActions from "./ReviewActions";
 import PaymentActions from "./PaymentActions";
+import CorrectionsPanel from "./CorrectionsPanel";
+import { listRounds, houseAndHomePeople, getDefaultReinspectionCents, suggestedCorrections } from "../../../../lib/corrections";
+import { engineerForJob } from "../../../../lib/engineers";
 import { defaultRecipients } from "../../../../lib/delivery";
 import { isOffice } from "../../../../lib/roles";
 
@@ -39,6 +42,11 @@ export default async function ReviewJob({ params }) {
     const r = await db.from("refunds").select("amount_cents, reason, status, source, created_at, by:profiles!refunds_created_by_fkey(full_name, email)").eq("submission_id", job.id).order("created_at");
     refunds = r.error ? [] : r.data || [];
   }
+  // Failed-inspection rounds (migration 0018).
+  const [{ rounds, missing }, people, defaultFee, eng] = await Promise.all([
+    listRounds(db, job.id), houseAndHomePeople(db), getDefaultReinspectionCents(db), engineerForJob(db, job),
+  ]);
+  const clear = rounds.some((r) => r.status === "cleared");
   const recipients = job.delivered_to && job.delivered_to.length ? job.delivered_to : await defaultRecipients(db, job);
   const f = job.report || {};
   const { tagLine, findings, corrections } = buildFindings(f);
@@ -91,13 +99,17 @@ export default async function ReviewJob({ params }) {
 
           <aside>
             <section className="card">
-              <ReviewActions job={{ ref: job.ref, status: job.status, payment_status: job.payment_status, letter_link: job.letter_link, drive_link: job.drive_link, review_notes: job.review_notes || "", photo_count: job.photo_count, final_pdf_link: job.final_pdf_link, delivered_to: job.delivered_to, recipients }} />
+              <ReviewActions job={{ ref: job.ref, status: job.status, clear, payment_status: job.payment_status, letter_link: job.letter_link, drive_link: job.drive_link, review_notes: job.review_notes || "", photo_count: job.photo_count, final_pdf_link: job.final_pdf_link, delivered_to: job.delivered_to, recipients }} />
               <table className="kv small" style={{ marginTop: 16 }}><tbody>
                 {job.reviewer && <tr><th>Reviewer</th><td>{job.reviewer.full_name || job.reviewer.email}</td></tr>}
                 {job.certified_at && <tr><th>Certified</th><td>{fmt(job.certified_at)}</td></tr>}
                 {job.delivered_at && <tr><th>Delivered</th><td>{fmt(job.delivered_at)}{job.delivered_to && job.delivered_to.length ? <><br /><span className="hint">to {job.delivered_to.join(", ")}</span></> : null}</td></tr>}
               </tbody></table>
             </section>
+            <CorrectionsPanel
+              job={{ ref: job.ref, status: job.status, internal: Boolean(job.company && job.company.is_internal), recipients: job.delivered_to && job.delivered_to.length ? await defaultRecipients(db, job) : recipients, stampOnFile: Boolean(eng.stampFileId || eng.signatureFileId) }}
+              rounds={rounds} missing={missing} suggested={suggestedCorrections(f)} people={people} defaultFee={defaultFee}
+              office={isAdmin} inspectorName={job.inspector ? job.inspector.full_name || job.inspector.email : job.inspector_name} />
             {isAdmin && (
               <section className="card" style={{ marginTop: 18 }}>
                 <PaymentActions job={{ ref: job.ref, payment_status: job.payment_status, amount_cents: job.amount_cents, refunded_cents: job.refunded_cents || 0, internal: Boolean(job.company && job.company.is_internal) }}

@@ -6,6 +6,7 @@ import { deliverFinalLetter } from "../../../../lib/delivery";
 import { engineerForJob } from "../../../../lib/engineers";
 import { recordLetter } from "../../../../lib/letterRecord";
 import { isOffice } from "../../../../lib/roles";
+import { listRounds, makeClearLetter } from "../../../../lib/corrections";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -51,7 +52,7 @@ export async function PATCH(req) {
       if (r.needsConfirm) return NextResponse.json({ ok: false, needsConfirm: true, problems: r.problems });
       if (!r.ok) return NextResponse.json({ ok: false, error: "Couldn't send to anyone: " + r.results.map((x) => `${x.to}: ${x.error}`).join("; "), results: r.results }, { status: 400 });
       const { data: fresh } = await db.from("submissions").select("*").eq("id", sub.id).single();
-      return NextResponse.json({ ok: true, submission: fresh, results: r.results, pdfLink: r.pdfLink, stamped: r.stamped });
+      return NextResponse.json({ ok: true, submission: fresh, results: r.results, pdfLink: r.pdfLink, stamped: r.stamped, clear: r.clear });
     } else if (b.action === "waive") {
       patch = { payment_status: "waived", ...(sub.status === "on_hold" ? { status: "submitted" } : {}) };
     } else if (b.action === "charge") {
@@ -63,6 +64,15 @@ export async function PATCH(req) {
       patch = { review_notes: String(b.notes || "").slice(0, 5000) };
     } else if (b.action === "letter") {
       // Regenerating: the engineer clicking it (if they're an engineer) signs it; otherwise the reviewer / main engineer.
+      // After a corrections letter and follow-up, the job's letter is the clear letter.
+      const { rounds } = await listRounds(db, sub.id);
+      const last = rounds.filter((r) => r.status !== "canceled").pop();
+      if (last && last.status === "cleared") {
+        const r = await makeClearLetter(db, sub, last, auth.profile);
+        await recordLetter(db, ["id", sub.id], r);
+        const { data: fresh } = await db.from("submissions").select("*").eq("id", sub.id).single();
+        return NextResponse.json({ ok: true, submission: fresh });
+      }
       const signer = auth.profile && auth.profile.role === "engineer" ? { ...sub, letter_engineer_id: auth.profile.id } : { ...sub, letter_engineer_id: null };
       const engineer = await engineerForJob(db, signer);
       const r = await generateLetter({ folderId: sub.drive_folder_id, report: sub.report || {}, company: await companyForLetter(db, sub), images: sub.photos || [], engineer });

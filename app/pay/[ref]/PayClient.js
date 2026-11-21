@@ -22,7 +22,7 @@ export default function PayClient({ job }) {
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [busy]);
-  const url = `/api/pay/${encodeURIComponent(job.ref)}`;
+  const url = `/api/pay/${encodeURIComponent(job.ref)}${job.round ? `?round=${encodeURIComponent(job.round)}` : ""}`;
 
   useEffect(() => {
     if (paid) return;
@@ -80,16 +80,16 @@ export default function PayClient({ job }) {
         <div><span>Job</span><span>{job.ref}</span></div>
         {job.address && <div><span>Property</span><span>{job.address}</span></div>}
         {job.client && <div><span>Client</span><span>{job.client}</span></div>}
-        <div><span>Certification fee</span><span>{money(job.amount)}</span></div>
+        <div><span>{job.round ? "Re-inspection fee" : "Certification fee"}</span><span>{money(job.amount)}</span></div>
       </div>
       {paid ? (
         <>
-          <p className="intro">The job is in the engineer's queue. You'll get the certified letter by email, and a receipt is on its way.</p>
+          <p className="intro">{job.round ? "The follow-up is in the engineer's queue. You'll get the clear letter by email, and a receipt is on its way." : "The job is in the engineer's queue. You'll get the certified letter by email, and a receipt is on its way."}</p>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}><a className="btn" href="/">Start another job</a><a className="btn ghost" href="/jobs">My jobs</a></div>
         </>
       ) : (
         <form onSubmit={pay}>
-          <p className="intro">Your job is saved. It goes to the engineer as soon as it's paid.</p>
+          <p className="intro">{job.round ? "Your follow-up is saved. It goes to the engineer as soon as the fee is paid." : "Your job is saved. It goes to the engineer as soon as it's paid."}</p>
           {!ready && !err && <p className="hint">Loading the card form…</p>}
           {/* Stripe owns this box (it replaces whatever is inside), so React must never put anything in it. */}
           <div ref={mountRef} className="stripe-mount" style={{ minHeight: ready ? 0 : 120 }} />

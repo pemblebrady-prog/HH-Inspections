@@ -26,6 +26,7 @@ export default function CompaniesAdmin() {
   return (
     <>
       <DefaultPrice cents={d.defaultPriceCents} affected={onDefault} onSaved={load} />
+      <DefaultReinspection cents={d.defaultReinspectionCents || 0} onSaved={load} />
 
       <section className="card" style={{ marginTop: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 10 }}>
@@ -122,6 +123,45 @@ function DefaultPrice({ cents, affected, onSaved }) {
           {err && <p className="err">{err}</p>}
         </>
       )}
+    </section>
+  );
+}
+
+// Failed inspections: the fee Ron/office starts from when they send a corrections letter (they can change it per job).
+function DefaultReinspection({ cents, onSaved }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [msg, setMsg] = useState("");
+  const valid = /^\$?\d+(\.\d{1,2})?$/.test(val.trim());
+  async function save() {
+    setBusy(true); setErr("");
+    const r = await api("/api/admin/settings", json("PATCH", { defaultReinspection: val }));
+    setBusy(false);
+    if (!r.ok) { setErr(r.error || "Couldn't save"); return; }
+    setEditing(false); setMsg(`Default re-inspection fee is now ${money(r.defaultReinspectionCents)}.`); onSaved();
+  }
+  return (
+    <section className="card" style={{ marginTop: 18 }}>
+      <h2>Default re-inspection fee</h2>
+      <p className="intro" style={{ marginBottom: 12 }}>When a job fails and a corrections letter goes out, this fee is filled in for the follow-up. The engineer or office can change it (or set $0) on each job. It's charged when the follow-up comes in.</p>
+      {msg && <p className="ok-msg">{msg}</p>}
+      {!editing ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <span style={{ fontSize: "1.8rem", fontWeight: 800 }}>{money(cents)}</span><span className="hint" style={{ marginTop: 0 }}>{cents ? "per follow-up" : "no fee unless one is entered on the job"}</span>
+          <button type="button" className="btn ghost" onClick={() => { setVal((cents / 100).toFixed(cents % 100 ? 2 : 0)); setEditing(true); setErr(""); setMsg(""); }}>Change</button>
+        </div>
+      ) : (
+        <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+          <div className="field" style={{ marginBottom: 0 }}><label htmlFor="deffee">Default fee ($)</label>
+            <input id="deffee" inputMode="decimal" value={val} onChange={(e) => setVal(e.target.value)} style={{ width: 140 }} /></div>
+          <button type="button" className="btn" disabled={!valid || busy} onClick={save}>{busy ? "Saving…" : "Save"}</button>
+          <button type="button" className="btn ghost" onClick={() => setEditing(false)}>Cancel</button>
+        </div>
+      )}
+      {editing && !valid && val && <p className="err">Enter a fee like 35 or 0.</p>}
+      {err && <p className="err">{err}</p>}
     </section>
   );
 }
