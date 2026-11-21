@@ -5,6 +5,7 @@ import { chargeSubmission } from "../../../../lib/charges";
 import { deliverFinalLetter } from "../../../../lib/delivery";
 import { engineerForJob } from "../../../../lib/engineers";
 import { recordLetter } from "../../../../lib/letterRecord";
+import { isOffice } from "../../../../lib/roles";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -30,7 +31,7 @@ export async function PATCH(req) {
   const { data: sub, error } = await db.from("submissions").select("*, company:companies(name, is_internal, phone, email)").eq("ref", b.ref).maybeSingle();
   if (error || !sub) return NextResponse.json({ ok: false, error: "Job not found" }, { status: 404 });
   const me = auth.profile && auth.profile.id;
-  if (["charge", "waive"].includes(b.action) && auth.profile && auth.profile.role !== "admin") {
+  if (["charge", "waive"].includes(b.action) && auth.profile && !isOffice(auth.profile)) {
     return NextResponse.json({ ok: false, error: "Only admins can change payments." }, { status: 403 });
   }
   const now = new Date().toISOString();

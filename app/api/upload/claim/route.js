@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../../lib/supabase/server";
 import { getDrive } from "../../../../lib/drive";
 import { isStagedBy, claimStaged } from "../../../../lib/staging";
+import { isOffice } from "../../../../lib/roles";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export async function POST(req) {
   const db = createAdminClient();
   if (db) {
     const { data: sub } = await db.from("submissions").select("inspector_id").eq("drive_folder_id", folderId).maybeSingle();
-    if (!sub || (sub.inspector_id !== auth.profile.id && auth.profile.role !== "admin")) return NextResponse.json({ ok: false, error: "Not your job" }, { status: 404 });
+    if (!sub || (sub.inspector_id !== auth.profile.id && !isOffice(auth.profile))) return NextResponse.json({ ok: false, error: "Not your job" }, { status: 404 });
   }
   const from = await isStagedBy(drive, auth.profile.id, id);
   if (!from) return NextResponse.json({ ok: false, error: "Early copy not found" }, { status: 404 });

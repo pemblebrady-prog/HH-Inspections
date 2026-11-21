@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../../lib/supabase/server";
 import { geocode, milesBetween } from "../../../../lib/geo";
+import { isOffice } from "../../../../lib/roles";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export async function POST(req) {
   }
   const { data: o } = await db.from("orders").select("*").eq("id", b.id).maybeSingle();
   const me = auth.profile;
-  if (!o || (me && me.role !== "admin" && o.inspector_id !== me.id)) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+  if (!o || (me && !isOffice(me) && o.inspector_id !== me.id)) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
 
   let spot = o.geo_lat != null && o.geo_lng != null ? { lat: o.geo_lat, lng: o.geo_lng } : null;
   if (!spot) {

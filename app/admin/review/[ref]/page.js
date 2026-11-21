@@ -7,6 +7,7 @@ import AdminHeader from "../../../AdminHeader";
 import ReviewActions from "./ReviewActions";
 import PaymentActions from "./PaymentActions";
 import { defaultRecipients } from "../../../../lib/delivery";
+import { isOffice } from "../../../../lib/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export default async function ReviewJob({ params }) {
   const db = createAdminClient();
   if (!db) notFound();
   const ref = decodeURIComponent(params.ref);
-  const isAdmin = !profile || profile.role === "admin"; // engineers don't see payments
+  const isAdmin = !profile || isOffice(profile); // engineers don't see payments
   const { data: job } = await db.from("submissions")
     .select("*, company:companies(name, is_internal, phone, email), inspector:profiles!submissions_inspector_id_fkey(full_name, email, phone, certificate_number), reviewer:profiles!submissions_reviewed_by_fkey(full_name, email)")
     .eq("ref", ref).maybeSingle();

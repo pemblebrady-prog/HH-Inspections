@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../lib/supabase/server";
 import { withEffectivePrice, getDefaultPriceCents } from "../../../lib/pricing";
 import { getDrive, rootFolderId, findOrCreateFolder, createUniqueFolder, appendSubmission } from "../../../lib/drive";
+import { isStaff, isOffice } from "../../../lib/roles";
 
 export const runtime = "nodejs";
 
@@ -33,7 +34,7 @@ async function recordInDatabase({ profile, data, date, isDemo, folderId, driveLi
       company = c ? await withEffectivePrice(db, c) : null;
     }
     // House & Home staff (admins, engineers) with no company: their own jobs are House & Home's, never charged.
-    if (!company && profile && ["admin", "engineer"].includes(profile.role)) {
+    if (!company && isStaff(profile)) {
       const { data: hh } = await db.from("companies").select("id, name, is_internal, price_cents").eq("is_internal", true).limit(1).maybeSingle();
       if (hh) company = hh;
     }
@@ -71,7 +72,7 @@ async function recordInDatabase({ profile, data, date, isDemo, folderId, driveLi
     if (orderId && !isDemo) {
       try {
         const { data: o } = await db.from("orders").select("id, inspector_id").eq("id", orderId).maybeSingle();
-        if (o && (!profile || profile.role === "admin" || !o.inspector_id || o.inspector_id === profile.id)) {
+        if (o && (!profile || isOffice(profile) || !o.inspector_id || o.inspector_id === profile.id)) {
           await db.from("orders").update({ submission_id: row.id, status: "inspected" }).eq("id", o.id);
         }
       } catch (e) { console.error("order link failed", e.message); }

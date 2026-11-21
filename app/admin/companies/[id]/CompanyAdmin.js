@@ -9,7 +9,7 @@ const money = (c) => `$${(Number(c || 0) / 100).toFixed(Number(c) % 100 ? 2 : 0)
 const day = (iso) => (iso ? new Date(iso.length === 10 ? iso + "T12:00:00" : iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Phoenix" }) : "—");
 const api = (url, opts) => fetch(url, opts).then((r) => r.json()).catch((e) => ({ ok: false, error: String(e) }));
 const json = (method, body) => ({ method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-const ROLE = { admin: "Admin", company_owner: "Company owner", inspector: "Inspector" };
+const ROLE = { admin: "Admin", office_manager: "Office manager (site-wide)", engineer: "Engineer", company_owner: "Company owner", company_office: "Office manager", inspector: "Inspector" };
 const PAY = { paid: "Paid", processing: "Processing", failed: "Failed", unpaid: "Not charged", waived: "No charge", refunded: "Refunded" };
 
 export default function CompanyAdmin({ id }) {
@@ -206,7 +206,8 @@ function PaymentCard({ c, onSave }) {
 
 // Invite someone straight into this company (same as People → Invite, with the company filled in).
 function InviteForm({ companyId, internal, hasOwner, onDone }) {
-  const roles = internal ? [["inspector", "Inspector"], ["admin", "Admin"], ["engineer", "Engineer"]] : [["inspector", "Inspector"], ["company_owner", "Company owner"]];
+  // Company roles; site-wide staff roles are given on People (admins only).
+  const roles = [["inspector", "Inspector"], ["office_manager", "Office manager"], ["company_owner", "Company owner"]];
   const blank = { email: "", fullName: "", role: !internal && !hasOwner ? "company_owner" : "inspector" };
   const [f, setF] = useState(blank);
   const [open, setOpen] = useState(false);
@@ -215,8 +216,7 @@ function InviteForm({ companyId, internal, hasOwner, onDone }) {
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
   async function invite(e) {
     e.preventDefault(); setBusy(true); setErr("");
-    const staff = ["admin", "engineer"].includes(f.role);
-    const r = await api("/api/admin/people", json("POST", { action: "invite", ...f, companyId: staff ? null : companyId }));
+    const r = await api("/api/admin/people", json("POST", { email: f.email, fullName: f.fullName, companyRole: f.role, companyId }));
     setBusy(false);
     if (!r.ok) { setErr(r.error || "Couldn't invite"); return; }
     const who = f.fullName.trim() || f.email.trim();
@@ -232,7 +232,9 @@ function InviteForm({ companyId, internal, hasOwner, onDone }) {
       </div>
       <div className="field" style={{ marginBottom: 10 }}><label htmlFor="inv-role">Role</label>
         <select id="inv-role" value={f.role} onChange={set("role")}>{roles.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
-        {f.role === "company_owner" && <div className="hint">Owners can invite their own inspectors and manage billing.</div>}</div>
+        {f.role === "company_owner" && <div className="hint">Owners can invite their own team and manage billing.</div>}
+        {f.role === "office_manager" && <div className="hint">Office managers see the company's jobs and billing and can invite inspectors.</div>}
+        {internal && <div className="hint">For House &amp; Home staff roles (admin, office manager, engineer), use People.</div>}</div>
       <p className="hint" style={{ margin: "0 0 10px" }}>They'll get a welcome email with a link to sign in.</p>
       <div style={{ display: "flex", gap: 10 }}>
         <button className="btn" disabled={busy}>{busy ? "Inviting…" : "Send invite"}</button>

@@ -4,6 +4,7 @@ import { authEnabled } from "../../lib/supabase/config";
 import { StatusPill } from "../../lib/statusLabels";
 import AppHeader from "../AppHeader";
 import { paysByCard } from "../../lib/payPerJob";
+import { isOffice, isCompanyManager } from "../../lib/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -19,8 +20,8 @@ export default async function MyJobs() {
   if (!authEnabled) redirect("/");
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login?next=/jobs");
-  if (profile.role === "admin") redirect("/admin/review"); // engineers see the jobs they submitted, like inspectors
-  const owner = profile.role === "company_owner";
+  if (isOffice(profile)) redirect("/admin/review"); // engineers see the jobs they submitted, like inspectors
+  const owner = isCompanyManager(profile);
   const db = createAdminClient();
   // Jobs waiting for a card payment get a Pay now button (pay-as-you-go, or no saved payment method).
   let payPerJob = false;

@@ -3,6 +3,7 @@ import { getCurrentProfile } from "../../lib/supabase/server";
 import { authEnabled } from "../../lib/supabase/config";
 import BillingClient from "./BillingClient";
 import AppHeader from "../AppHeader";
+import { isCompanyManager } from "../../lib/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ export default async function BillingPage() {
   if (!authEnabled) redirect("/");
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login?next=/billing");
-  if (profile.role !== "company_owner") redirect("/");
+  if (!isCompanyManager(profile)) redirect("/");
   return (
     <>
       <AppHeader title="Billing" profile={profile} />

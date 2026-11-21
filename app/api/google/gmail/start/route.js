@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 // Admin → Email → Connect Gmail: send them to Google to approve "send email as you".
 export async function GET(req) {
-  const auth = await requireUser(["admin"]);
+  const auth = await requireUser(["admin!"]);
   if (auth.error) return auth.error;
   const origin = new URL(req.url).origin;
   const oauth = gmailOAuth(`${origin}/api/google/gmail/callback`);

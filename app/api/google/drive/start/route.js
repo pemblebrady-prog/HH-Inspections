@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 // Admin → Google & email → Connect Google Drive.
 export async function GET(req) {
-  const auth = await requireUser(["admin"]);
+  const auth = await requireUser(["admin!"]);
   if (auth.error) return auth.error;
   const origin = new URL(req.url).origin;
   const oauth = driveOAuth(`${origin}/api/google/drive/callback`);

@@ -17,7 +17,7 @@ export async function GET(req) {
     res.cookies.set("hh_drive_state", "", { path: "/", maxAge: 0 });
     return res;
   };
-  const auth = await requireUser(["admin"]);
+  const auth = await requireUser(["admin!"]);
   if (auth.error) return auth.error;
   if (url.searchParams.get("error")) return back(`error=${encodeURIComponent("Google sign-in was canceled.")}`);
   if (!url.searchParams.get("state") || url.searchParams.get("state") !== req.cookies.get("hh_drive_state")?.value) {
