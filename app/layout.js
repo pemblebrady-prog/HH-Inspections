@@ -1,5 +1,6 @@
 import "./globals.css";
 import InstallPrompt from "./InstallPrompt";
+import OfflineSupport from "./OfflineSupport";
 
 export const metadata = {
   title: "Inspector Portal — Manufactured Home Engineering Certification | House & Home",
@@ -24,6 +25,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
+        <OfflineSupport />
         {children}
         <InstallPrompt />
       </body>

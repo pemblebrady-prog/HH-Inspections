@@ -5,12 +5,19 @@ import { useEffect, useState } from "react";
 // address. More than a mile away → a warning (never a block): maybe they tapped the wrong job.
 export default function NearJobCheck({ orderId, address, onPickAnother }) {
   const [far, setFar] = useState(null);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     if (!orderId || typeof navigator === "undefined" || !navigator.geolocation) return;
     const key = `nearok:${orderId}`;
     try { if (sessionStorage.getItem(key)) return; } catch { /* private mode */ }
     let cancelled = false;
+    // No signal: skip the distance check for now and run it once signal is back.
+    if (navigator.onLine === false) {
+      const retry = () => { if (!cancelled) setTick((n) => n + 1); };
+      window.addEventListener("online", retry, { once: true });
+      return () => { cancelled = true; window.removeEventListener("online", retry); };
+    }
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const d = await fetch("/api/orders/distance", {
@@ -23,7 +30,7 @@ export default function NearJobCheck({ orderId, address, onPickAnother }) {
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60 * 1000 },
     );
     return () => { cancelled = true; };
-  }, [orderId]);
+  }, [orderId, tick]);
 
   if (far == null) return null;
   const keepGoing = () => { try { sessionStorage.setItem(`nearok:${orderId}`, "1"); } catch {} setFar(null); };

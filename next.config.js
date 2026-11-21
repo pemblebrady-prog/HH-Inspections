@@ -6,6 +6,10 @@ const nextConfig = {
     return [{
       source: "/:path*",
       headers: [{ key: "Content-Security-Policy", value: "frame-ancestors 'self' https://houseandhomeaz.com https://www.houseandhomeaz.com" }],
+    }, {
+      // The offline helper must always be re-checked, so updates reach phones quickly.
+      source: "/sw.js",
+      headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }, { key: "Service-Worker-Allowed", value: "/" }],
     }];
   },
 };
