@@ -412,3 +412,8 @@ html.embedded .shell { padding-top: 8px; padding-bottom: 24px; }
 
 .sk-save-bottom{padding:10px 0 4px}
 .sk-save-bottom .btn{width:100%;justify-content:center;text-align:center}
+
+/* No-signal bar (offline mode) */
+.offline-bar{position:sticky;top:0;z-index:95;background:#3d4a52;color:#fff;font-size:13px;line-height:1.4;padding:7px 14px calc(7px) ;text-align:center;padding-top:calc(7px + env(safe-area-inset-top))}
+.offline-bar b{color:#FFD9A8}
+@media print{.offline-bar{display:none !important}}

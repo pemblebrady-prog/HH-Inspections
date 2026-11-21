@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import NearJobCheck from "./NearJobCheck";
+import { warmOffline } from "./OfflineSupport";
 
 const when = (iso) => iso ? new Date(iso).toLocaleString("en-US", { timeZone: "America/Phoenix", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "Time not set";
 const yn = (b) => (b === true ? "Yes" : b === false ? "No" : "?");
@@ -11,7 +12,12 @@ export default function AssignedOrders({ form }) {
   const info = form.orderInfo;
   useEffect(() => {
     if (info || !form.profile) return;
-    fetch("/api/orders/mine").then((r) => r.json()).then((d) => setList(d.ok ? d.orders : [])).catch(() => setList([]));
+    fetch("/api/orders/mine").then((r) => r.json()).then((d) => {
+      const orders = d.ok ? d.orders : [];
+      setList(orders);
+      // Save each assigned job on the phone, so it can be started with no signal at the site.
+      if (orders.length && !d.offline) warmOffline(orders.flatMap((o) => [`/?order=${encodeURIComponent(o.id)}`, `/api/orders/prefill?id=${encodeURIComponent(o.id)}`]));
+    }).catch(() => setList([]));
   }, [info, form.profile]);
 
   if (info) {
