@@ -4,6 +4,7 @@ import { StatusPill } from "../../../../lib/statusLabels";
 import StatementList from "../../../StatementList";
 import { OnOff } from "../CompaniesAdmin";
 import { normalizeLogo } from "../../../../lib/formConfig";
+import { payLabel } from "../../../../lib/payLabel";
 
 const money = (c) => `$${(Number(c || 0) / 100).toFixed(Number(c) % 100 ? 2 : 0)}`;
 const day = (iso) => (iso ? new Date(iso.length === 10 ? iso + "T12:00:00" : iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Phoenix" }) : "—");
@@ -43,6 +44,7 @@ export default function CompanyAdmin({ id }) {
         <div className="track-stats" style={{ marginTop: 14, flexWrap: "wrap" }}>
           <span><b>{d.totals.jobs}</b> jobs</span>
           <span><b>{money(d.totals.paid)}</b> paid</span>
+          {d.totals.refunded > 0 && <span><b>{money(d.totals.refunded)}</b> refunded</span>}
           {d.totals.processing > 0 && <span><b>{money(d.totals.processing)}</b> processing</span>}
           {d.totals.failed > 0 && <span style={{ color: "var(--err)" }}><b style={{ color: "inherit" }}>{d.totals.failed}</b> failed payments</span>}
           <span><b>{activePeople.length}</b> people</span>
@@ -88,7 +90,7 @@ export default function CompanyAdmin({ id }) {
                   <td><a href={`/admin/review/${encodeURIComponent(j.ref)}`}>{j.ref}</a></td>
                   <td>{day(j.submitted_at)}</td><td>{j.property_address}</td><td>{j.client_name}</td><td>{j.inspector_name}</td>
                   <td><StatusPill status={j.status} /></td>
-                  <td style={j.payment_status === "failed" ? { color: "var(--err)" } : undefined}>{PAY[j.payment_status] || j.payment_status}{j.amount_cents && j.payment_status !== "waived" ? ` · ${money(j.amount_cents)}` : ""}</td>
+                  <td style={j.payment_status === "failed" ? { color: "var(--err)" } : undefined}>{payLabel(j)}{j.amount_cents && j.payment_status !== "waived" ? ` · ${money(j.amount_cents)}` : ""}</td>
                 </tr>))}</tbody>
             </table>
           </div>

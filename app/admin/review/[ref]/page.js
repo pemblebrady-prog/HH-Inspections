@@ -33,6 +33,12 @@ export default async function ReviewJob({ params }) {
     const r = await db.from("orders").select("ref, isn_order_number").eq("id", job.order_id).maybeSingle();
     order = r.error ? (await db.from("orders").select("ref").eq("id", job.order_id).maybeSingle()).data : r.data;
   }
+  // Refund history (office only; table added in migration 0017).
+  let refunds = [];
+  if (isAdmin) {
+    const r = await db.from("refunds").select("amount_cents, reason, status, source, created_at, by:profiles!refunds_created_by_fkey(full_name, email)").eq("submission_id", job.id).order("created_at");
+    refunds = r.error ? [] : r.data || [];
+  }
   const recipients = job.delivered_to && job.delivered_to.length ? job.delivered_to : await defaultRecipients(db, job);
   const f = job.report || {};
   const { tagLine, findings, corrections } = buildFindings(f);
@@ -94,7 +100,8 @@ export default async function ReviewJob({ params }) {
             </section>
             {isAdmin && (
               <section className="card" style={{ marginTop: 18 }}>
-                <PaymentActions job={{ ref: job.ref, payment_status: job.payment_status, amount_cents: job.amount_cents, internal: Boolean(job.company && job.company.is_internal) }} />
+                <PaymentActions job={{ ref: job.ref, payment_status: job.payment_status, amount_cents: job.amount_cents, refunded_cents: job.refunded_cents || 0, internal: Boolean(job.company && job.company.is_internal) }}
+                  refunds={refunds.map((r) => ({ amount: r.amount_cents, reason: r.reason, status: r.status, source: r.source, at: r.created_at, by: r.by ? r.by.full_name || r.by.email : "" }))} />
               </section>
             )}
           </aside>

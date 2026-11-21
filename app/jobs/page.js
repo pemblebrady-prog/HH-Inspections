@@ -4,6 +4,7 @@ import { authEnabled } from "../../lib/supabase/config";
 import { StatusPill } from "../../lib/statusLabels";
 import AppHeader from "../AppHeader";
 import { paysByCard } from "../../lib/payPerJob";
+import { payLabel } from "../../lib/payLabel";
 import { isOffice, isCompanyManager } from "../../lib/roles";
 
 export const dynamic = "force-dynamic";
@@ -32,11 +33,13 @@ export default async function MyJobs() {
 
   let rows = [], err = null;
   if (db) {
-    let q = db.from("submissions")
-      .select("ref, status, payment_status, amount_cents, property_address, client_name, inspector_name, inspection_date, submitted_at, delivered_at, final_pdf_id")
-      .eq("is_demo", false).order("submitted_at", { ascending: false }).limit(200);
-    q = owner && profile.company_id ? q.eq("company_id", profile.company_id) : q.eq("inspector_id", profile.id);
-    const r = await q;
+    const cols = "ref, status, payment_status, amount_cents, property_address, client_name, inspector_name, inspection_date, submitted_at, delivered_at, final_pdf_id";
+    const build = (c) => {
+      const q = db.from("submissions").select(c).eq("is_demo", false).order("submitted_at", { ascending: false }).limit(200);
+      return owner && profile.company_id ? q.eq("company_id", profile.company_id) : q.eq("inspector_id", profile.id);
+    };
+    let r = await build(cols + ", refunded_cents");
+    if (r.error) r = await build(cols); // before migration 0017
     if (r.error) err = r.error.message; else rows = r.data;
   } else err = "Database isn't configured.";
 
@@ -66,7 +69,7 @@ export default async function MyJobs() {
                     {owner && <td>{r.inspector_name || "—"}</td>}
                     <td>{r.inspection_date || "—"}</td>
                     <td>{fmt(r.submitted_at)}</td>
-                    <td>{PAY[r.payment_status] || r.payment_status}{r.amount_cents && r.payment_status !== "waived" ? ` · $${(r.amount_cents / 100).toFixed(0)}` : ""}
+                    <td>{payLabel(r)}{r.amount_cents && r.payment_status !== "waived" ? ` · $${(r.amount_cents / 100).toFixed(0)}` : ""}
                       {payPerJob && r.status === "on_hold" && r.payment_status !== "paid" && <div><a className="btn" style={{ marginTop: 6, padding: "6px 12px" }} href={`/pay/${encodeURIComponent(r.ref)}`}>Pay now</a></div>}</td>
                     <td>{r.final_pdf_id
                       ? <a href={`/api/jobs/report?ref=${encodeURIComponent(r.ref)}`} target="_blank" rel="noreferrer">Download PDF</a>

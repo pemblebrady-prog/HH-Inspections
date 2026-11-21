@@ -34,7 +34,7 @@ export default function BillingClient() {
                 <td>{p.submission ? `${p.submission.ref}${p.submission.property_address ? " · " + p.submission.property_address : ""}` : "—"}</td>
                 <td>${(p.amount_cents / 100).toFixed(2)}</td>
                 <td>{p.method === "ach" ? "Bank" : "Card"}</td>
-                <td>{LABEL[p.status] || p.status}{p.failure_reason ? <div className="hint">{p.failure_reason}</div> : null}</td>
+                <td>{p.refunded_cents > 0 && p.refunded_cents < p.amount_cents ? `Paid · $${(p.refunded_cents / 100).toFixed(2)} refunded` : LABEL[p.status] || p.status}{p.failure_reason ? <div className="hint">{p.failure_reason}</div> : null}</td>
               </tr>))}
             </tbody>
           </table></div>
