@@ -6,7 +6,7 @@ import { useState } from "react";
 const money = (c) => `$${(Number(c || 0) / 100).toFixed(Number(c) % 100 ? 2 : 0)}`;
 const day = (iso) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Phoenix" }) : "");
 const ymd = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ""); return m ? new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : s || ""; };
-const FEE = { none: "No fee", unpaid: "Not paid yet", processing: "Processing (bank transfer)", paid: "Paid", failed: "Charge failed", waived: "Waived" };
+const FEE = { none: "No fee", unpaid: "Not paid yet", processing: "Processing (bank transfer)", paid: "Paid", failed: "Charge failed", waived: "Waived", refunded: "Refunded" };
 const OPEN = ["draft", "waiting", "awaiting_payment", "submitted"];
 
 export default function CorrectionsPanel({ job, rounds: initial, suggested, people, defaultFee, office, inspectorName, missing }) {
@@ -18,6 +18,7 @@ export default function CorrectionsPanel({ job, rounds: initial, suggested, peop
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const [showHistory, setShowHistory] = useState(false);
+  const [refund, setRefund] = useState(null); // { roundId, kind: "full" | "part", amount, reason }
 
   const open = [...rounds].reverse().find((r) => OPEN.includes(r.status)) || null;
   const last = rounds.filter((r) => r.status !== "canceled").pop() || null;
@@ -114,6 +115,29 @@ export default function CorrectionsPanel({ job, rounds: initial, suggested, peop
         <div style={{ display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
           <button type="button" className="viewswitch" disabled={!!busy} onClick={() => call("fee_charge")}>{busy === "fee_charge" ? "Charging…" : "Charge now"}</button>
           <button type="button" className="viewswitch" disabled={!!busy} onClick={() => { if (window.confirm(`Waive the ${money(r.fee_cents)} re-inspection fee?`)) call("fee_waive"); }}>Waive</button>
+        </div>
+      )}
+      {r.fee_refunded_cents > 0 && <div className="hint">{money(r.fee_refunded_cents)} refunded</div>}
+      {office && ["paid", "refunded"].includes(r.fee_status) && r.fee_refunded_cents < r.fee_cents && (!refund || refund.roundId !== r.id) && (
+        <button type="button" className="viewswitch" style={{ marginTop: 6 }} onClick={() => setRefund({ roundId: r.id, kind: "full", amount: "", reason: "" })}>Refund fee…</button>
+      )}
+      {refund && refund.roundId === r.id && (
+        <div className="send-box" style={{ marginTop: 8 }}>
+          <div className="chips" style={{ marginBottom: 8 }}>
+            <button type="button" className={"chip" + (refund.kind === "full" ? " on" : "")} onClick={() => setRefund({ ...refund, kind: "full" })}>Full: {money(r.fee_cents - (r.fee_refunded_cents || 0))}</button>
+            <button type="button" className={"chip" + (refund.kind === "part" ? " on" : "")} onClick={() => setRefund({ ...refund, kind: "part" })}>Part of it</button>
+          </div>
+          {refund.kind === "part" && <div className="field" style={{ marginBottom: 8 }}><label htmlFor="frf-amt">Amount ($)</label><input id="frf-amt" inputMode="decimal" value={refund.amount} onChange={(e) => setRefund({ ...refund, amount: e.target.value })} style={{ width: 120 }} /></div>}
+          <div className="field" style={{ marginBottom: 8 }}><label htmlFor="frf-why">Reason (on the receipt)</label><input id="frf-why" value={refund.reason} onChange={(e) => setRefund({ ...refund, reason: e.target.value })} /></div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" className="btn" disabled={!!busy || (refund.kind === "part" && !refund.amount)} onClick={async () => {
+              const amt = refund.kind === "full" ? "" : refund.amount;
+              if (!window.confirm(`Refund ${amt ? "$" + amt : money(r.fee_cents - (r.fee_refunded_cents || 0))} of the re-inspection fee to the card or bank account it came from?`)) return;
+              const d = await call("fee_refund", { roundId: r.id, amount: amt, reason: refund.reason });
+              if (d) setRefund(null);
+            }}>{busy === "fee_refund" ? "Refunding…" : "Refund"}</button>
+            <button type="button" className="btn ghost" onClick={() => setRefund(null)}>Cancel</button>
+          </div>
         </div>
       )}</td></tr>
   );

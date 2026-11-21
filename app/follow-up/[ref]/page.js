@@ -35,8 +35,9 @@ export default async function FollowupPage({ params }) {
   );
   else if (round.status === "submitted") body = <p className="intro">Sent. The engineer is reviewing your follow-up; the clear letter is emailed once it's accepted. <a href="/jobs">My jobs</a></p>;
   else body = (
+    <>{round.pdf_id && <p className="hint" style={{ marginTop: 0 }}><a href={`/api/jobs/report?ref=${encodeURIComponent(sub.ref)}&round=${round.round}`} target="_blank" rel="noreferrer">Open the corrections letter (PDF)</a></p>}
     <FollowupForm ref_={sub.ref} round={{ id: round.id, round: round.round, corrections: round.corrections, fee: round.fee_cents, reinspect }}
-      today={new Date().toLocaleDateString("en-CA", { timeZone: "America/Phoenix" })} />
+      today={new Date().toLocaleDateString("en-CA", { timeZone: "America/Phoenix" })} /></>
   );
 
   return (

@@ -4,6 +4,7 @@ import { sendLicenseWarnings } from "../../../../lib/licenseWarnings";
 import { getDrive } from "../../../../lib/drive";
 import { cleanStaging } from "../../../../lib/staging";
 import { sendPayReminders } from "../../../../lib/payReminders";
+import { sendFollowupReminders } from "../../../../lib/corrections";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ export async function GET(req) {
   const drive = await getDrive();
   r.stagedPhotosRemoved = drive ? await cleanStaging(drive, 14).catch((e) => { console.error("staging cleanup", e.message); return 0; }) : 0;
   r.payReminders = await sendPayReminders(db, { origin: new URL(req.url).origin }).catch((e) => { console.error("pay reminders", e.message); return 0; });
+  r.followupReminders = await sendFollowupReminders(db, { origin: new URL(req.url).origin }).catch((e) => { console.error("follow-up reminders", e.message); return 0; }); // only if turned on
   console.log("daily", JSON.stringify(r));
   return NextResponse.json({ ok: true, ...r });
 }

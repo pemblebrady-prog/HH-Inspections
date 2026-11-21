@@ -105,6 +105,7 @@ export default async function MyJobs() {
                     <td>{r.final_pdf_id
                       ? <a href={`/api/jobs/report?ref=${encodeURIComponent(r.ref)}`} target="_blank" rel="noreferrer">Download PDF</a>
                       : <span className="hint">{r.status === "certified" ? "Sending soon" : "Not ready"}</span>}
+                      {roundOf[r.id] && roundOf[r.id].pdf_id && <div><a className="hint" href={`/api/jobs/report?ref=${encodeURIComponent(r.ref)}&round=${roundOf[r.id].round}`} target="_blank" rel="noreferrer">Corrections letter</a></div>}
                       {OPEN_FOR_INSPECTORS.includes(r.status) && <div><a className="hint" href={`/jobs/${encodeURIComponent(r.ref)}/photos`}>Add photos</a></div>}</td>
                   </tr>
                 ))}

@@ -20,7 +20,8 @@ create table if not exists public.correction_rounds (
   assigned_to           uuid references public.profiles (id) on delete set null,
   fee_cents             integer not null default 0 check (fee_cents >= 0),
   fee_status            text not null default 'none'
-                        check (fee_status in ('none', 'unpaid', 'processing', 'paid', 'failed', 'waived')),
+                        check (fee_status in ('none', 'unpaid', 'processing', 'paid', 'failed', 'waived', 'refunded')),
+  fee_refunded_cents    integer not null default 0,
   -- the corrections letter
   engineer_id           uuid references public.profiles (id) on delete set null,   -- whose name and stamp it carries
   letter_doc_id         text,
@@ -37,6 +38,7 @@ create table if not exists public.correction_rounds (
   reinspection_date     date,
   followup_submitted_at timestamptz,
   followup_submitted_by uuid references public.profiles (id) on delete set null,
+  reminders_sent        integer not null default 0,                -- follow-up reminder emails sent (optional, off by default)
   created_by            uuid references public.profiles (id) on delete set null,
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now(),
@@ -65,4 +67,7 @@ alter table public.payments add column if not exists correction_round_id uuid re
 
 -- Default re-inspection fee (admins change it on the Companies page, next to the default price).
 insert into public.settings (key, value) values ('default_reinspection_cents', '0'::jsonb)
+  on conflict (key) do nothing;
+-- Optional reminder emails when a follow-up hasn't come in after 3 and 7 days (off until an admin turns it on).
+insert into public.settings (key, value) values ('followup_reminders', 'false'::jsonb)
   on conflict (key) do nothing;

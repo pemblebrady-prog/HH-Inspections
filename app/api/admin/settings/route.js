@@ -14,6 +14,11 @@ export async function PATCH(req) {
   const db = createAdminClient();
   if (!db) return NextResponse.json({ ok: false, error: "Database isn't configured." }, { status: 500 });
   let b; try { b = await req.json(); } catch { return NextResponse.json({ ok: false, error: "Bad request" }, { status: 400 }); }
+  if (b.followupReminders !== undefined) { // optional follow-up reminder emails (off by default)
+    const { error } = await db.from("settings").upsert({ key: "followup_reminders", value: b.followupReminders === true, updated_at: new Date().toISOString(), updated_by: auth.profile ? auth.profile.id : null });
+    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true, followupReminders: b.followupReminders === true });
+  }
   if (b.defaultReinspection !== undefined) {
     const fee = parseDollars(b.defaultReinspection);
     if (Number.isNaN(fee) || (fee != null && fee > 100000)) return NextResponse.json({ ok: false, error: "Enter a fee like 35 or 0." }, { status: 400 });

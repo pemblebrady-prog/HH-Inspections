@@ -39,7 +39,7 @@ export default async function ReviewJob({ params }) {
   // Refund history (office only; table added in migration 0017).
   let refunds = [];
   if (isAdmin) {
-    const r = await db.from("refunds").select("amount_cents, reason, status, source, created_at, by:profiles!refunds_created_by_fkey(full_name, email)").eq("submission_id", job.id).order("created_at");
+    const r = await db.from("refunds").select("amount_cents, reason, status, source, created_at, payment_id, by:profiles!refunds_created_by_fkey(full_name, email)").eq("submission_id", job.id).order("created_at");
     refunds = r.error ? [] : r.data || [];
   }
   // Failed-inspection rounds (migration 0018).
@@ -47,6 +47,11 @@ export default async function ReviewJob({ params }) {
     listRounds(db, job.id), houseAndHomePeople(db), getDefaultReinspectionCents(db), engineerForJob(db, job),
   ]);
   const clear = rounds.some((r) => r.status === "cleared");
+  const feePays = new Set();
+  if (refunds.length) {
+    const fp = await db.from("payments").select("id").in("id", refunds.map((r) => r.payment_id).filter(Boolean)).not("correction_round_id", "is", null);
+    if (!fp.error) (fp.data || []).forEach((p) => feePays.add(p.id));
+  }
   const recipients = job.delivered_to && job.delivered_to.length ? job.delivered_to : await defaultRecipients(db, job);
   const f = job.report || {};
   const { tagLine, findings, corrections } = buildFindings(f);
@@ -113,7 +118,7 @@ export default async function ReviewJob({ params }) {
             {isAdmin && (
               <section className="card" style={{ marginTop: 18 }}>
                 <PaymentActions job={{ ref: job.ref, payment_status: job.payment_status, amount_cents: job.amount_cents, refunded_cents: job.refunded_cents || 0, internal: Boolean(job.company && job.company.is_internal) }}
-                  refunds={refunds.map((r) => ({ amount: r.amount_cents, reason: r.reason, status: r.status, source: r.source, at: r.created_at, by: r.by ? r.by.full_name || r.by.email : "" }))} />
+                  refunds={refunds.map((r) => ({ amount: r.amount_cents, reason: feePays.has(r.payment_id) ? `Re-inspection fee${r.reason ? `: ${r.reason}` : ""}` : r.reason, status: r.status, source: r.source, at: r.created_at, by: r.by ? r.by.full_name || r.by.email : "" }))} />
               </section>
             )}
           </aside>
