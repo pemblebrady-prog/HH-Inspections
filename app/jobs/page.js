@@ -7,6 +7,7 @@ import { paysByCard } from "../../lib/payPerJob";
 import { payLabel } from "../../lib/payLabel";
 import { isOffice, isCompanyManager } from "../../lib/roles";
 import { canDoFollowup } from "../../lib/corrections";
+import { OPEN_FOR_INSPECTORS } from "../../lib/jobFiles";
 
 export const dynamic = "force-dynamic";
 
@@ -103,7 +104,8 @@ export default async function MyJobs() {
                       {payPerJob && r.status === "on_hold" && r.payment_status !== "paid" && <div><a className="btn" style={{ marginTop: 6, padding: "6px 12px" }} href={`/pay/${encodeURIComponent(r.ref)}`}>Pay now</a></div>}</td>
                     <td>{r.final_pdf_id
                       ? <a href={`/api/jobs/report?ref=${encodeURIComponent(r.ref)}`} target="_blank" rel="noreferrer">Download PDF</a>
-                      : <span className="hint">{r.status === "certified" ? "Sending soon" : "Not ready"}</span>}</td>
+                      : <span className="hint">{r.status === "certified" ? "Sending soon" : "Not ready"}</span>}
+                      {OPEN_FOR_INSPECTORS.includes(r.status) && <div><a className="hint" href={`/jobs/${encodeURIComponent(r.ref)}/photos`}>Add photos</a></div>}</td>
                   </tr>
                 ))}
               </tbody>

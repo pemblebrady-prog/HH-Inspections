@@ -120,13 +120,17 @@ export default async function ReviewJob({ params }) {
         </div>
 
         <section className="card" style={{ marginTop: 18 }}>
-          <h3>Photos ({photos.length})</h3>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+            <h3>Photos ({photos.length})</h3>
+            {job.status !== "canceled" && <a className="btn ghost" style={{ padding: "6px 12px", textDecoration: "none" }} href={`/jobs/${encodeURIComponent(job.ref)}/photos`}>Add or replace photos / sketch</a>}
+          </div>
+          {photos.some((p) => p.added_at) && <p className="hint" style={{ marginTop: 0 }}>Some photos were added after submitting{job.letter_link ? ". Tap Regenerate letter to put them in the letter" : ""}.</p>}
           {photos.length === 0 && <p className="hint">No photos recorded for this job yet. They appear once the inspector's upload finishes{job.drive_link ? "; you can also check the Drive folder" : ""}.</p>}
           <div className="photo-grid">
             {photos.map((p) => (
               <a key={p.id} href={`/api/admin/photo?id=${encodeURIComponent(p.id)}`} target="_blank" rel="noreferrer" className="photo">
                 <img src={`/api/admin/photo?id=${encodeURIComponent(p.id)}`} alt={p.label} loading="lazy" />
-                <span>{p.label}</span>
+                <span>{p.label}{p.added_at ? " · added" : ""}</span>
               </a>
             ))}
           </div>
