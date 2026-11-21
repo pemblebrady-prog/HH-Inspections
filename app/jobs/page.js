@@ -6,6 +6,7 @@ import AppHeader from "../AppHeader";
 import { paysByCard } from "../../lib/payPerJob";
 import { payLabel } from "../../lib/payLabel";
 import { isOffice, isCompanyManager } from "../../lib/roles";
+import { canDoFollowup } from "../../lib/corrections";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ export default async function MyJobs() {
 
   let rows = [], err = null;
   if (db) {
-    const cols = "ref, status, payment_status, amount_cents, property_address, client_name, inspector_name, inspection_date, submitted_at, delivered_at, final_pdf_id";
+    const cols = "id, ref, status, inspector_id, company_id, payment_status, amount_cents, property_address, client_name, inspector_name, inspection_date, submitted_at, delivered_at, final_pdf_id";
     const build = (c) => {
       const q = db.from("submissions").select(c).eq("is_demo", false).order("submitted_at", { ascending: false }).limit(200);
       return owner && profile.company_id ? q.eq("company_id", profile.company_id) : q.eq("inspector_id", profile.id);
@@ -45,6 +46,21 @@ export default async function MyJobs() {
 
   const open = rows.filter((r) => !["delivered", "canceled"].includes(r.status)).length;
 
+  // Corrections follow-ups (migration 0018): on my jobs, plus House & Home re-inspections assigned to me.
+  const roundOf = {}; let todo = [];
+  if (db && !err) {
+    const ids = rows.map((r) => r.id);
+    const [a, b] = await Promise.all([
+      ids.length ? db.from("correction_rounds").select("*").in("submission_id", ids).neq("status", "canceled") : { data: [] },
+      db.from("correction_rounds").select("*, job:submissions(id, ref, status, property_address, client_name, inspector_id, company_id)").eq("assigned_to", profile.id).in("status", ["waiting", "awaiting_payment"]),
+    ]);
+    if (!a.error) for (const x of a.data || []) if (!roundOf[x.submission_id] || x.round > roundOf[x.submission_id].round) roundOf[x.submission_id] = x;
+    const mineOpen = rows.map((r) => roundOf[r.id] && { ...roundOf[r.id], job: r }).filter((x) => x && ["waiting", "awaiting_payment"].includes(x.status));
+    const assigned = b.error ? [] : (b.data || []).filter((x) => x.job && !mineOpen.some((m) => m.id === x.id));
+    todo = [...mineOpen, ...assigned].filter((x) => canDoFollowup(profile, x.job, x));
+  }
+  const roundTag = { draft: "Corrections letter coming", waiting: "Follow-up needed", awaiting_payment: "Fee to pay", submitted: "Follow-up with the engineer", cleared: "Clear letter coming", redo: "More corrections" };
+
   return (
     <>
       <AppHeader title="My jobs" profile={profile} wide />
@@ -53,6 +69,20 @@ export default async function MyJobs() {
           <h2>{owner ? `${(profile.company && profile.company.name) || "Company"} jobs` : "My jobs"}</h2>
           {rows.length > 0 && <div className="track-stats"><span><b>{rows.length}</b> total</span><span><b>{open}</b> in progress</span></div>}
         </div>
+        {todo.length > 0 && (
+          <div className="card" style={{ marginBottom: 16, padding: 18, borderColor: "#e8c9a6", background: "#fdf4ea" }}>
+            <b>Follow-ups for you</b>
+            <p className="hint" style={{ margin: "4px 0 8px" }}>The engineer needs photos showing these corrections before the clear letter can be issued.</p>
+            {todo.map((x) => (
+              <div key={x.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", borderTop: "1px solid #ecdcc8", padding: "8px 0" }}>
+                <span><b>{x.job.ref}</b> · {x.job.property_address || x.job.client_name || ""}<br /><span className="hint">{x.corrections.length} correction{x.corrections.length === 1 ? "" : "s"}{x.followup_by === "house_and_home" ? " · House & Home re-inspection" : ""}</span></span>
+                {x.status === "awaiting_payment"
+                  ? <a className="btn" style={{ padding: "6px 12px", textDecoration: "none" }} href={`/pay/${encodeURIComponent(x.job.ref)}?round=${x.id}`}>Pay fee</a>
+                  : <a className="btn" style={{ padding: "6px 12px", textDecoration: "none" }} href={`/follow-up/${encodeURIComponent(x.job.ref)}`}>{x.followup_by === "house_and_home" ? "Re-inspect" : "Send photos"}</a>}
+              </div>
+            ))}
+          </div>
+        )}
         {err && <div className="card"><p className="err">Couldn't load jobs: {err}</p></div>}
         {!err && rows.length === 0 && <div className="card"><p className="intro">No jobs yet. <a href="/">Submit your first one</a>.</p></div>}
         {rows.length > 0 && (
@@ -63,7 +93,7 @@ export default async function MyJobs() {
                 {rows.map((r) => (
                   <tr key={r.ref}>
                     <td><b>{r.ref}</b></td>
-                    <td><StatusPill status={r.status} /></td>
+                    <td><StatusPill status={r.status} />{roundOf[r.id] && roundTag[roundOf[r.id].status] && <div className="hint" style={{ marginTop: 4 }}>{roundTag[roundOf[r.id].status]}</div>}</td>
                     <td>{r.property_address || "—"}</td>
                     <td>{r.client_name || "—"}</td>
                     {owner && <td>{r.inspector_name || "—"}</td>}
@@ -80,7 +110,7 @@ export default async function MyJobs() {
             </table>
           </div>
         )}
-        <p className="hint" style={{ marginTop: 10 }}>Status: <b>Uploading photos</b> → <b>Needs review</b> (with the engineer) → <b>Under review</b> → <b>Certified</b> → <b>Delivered</b> (report emailed). Jobs on hold need a payment update{owner ? <> under <a href="/billing">Billing</a></> : " from your company owner"}.</p>
+        <p className="hint" style={{ marginTop: 10 }}>Status: <b>Uploading photos</b> → <b>Needs review</b> (with the engineer) → <b>Under review</b> → <b>Certified</b> → <b>Delivered</b> (report emailed). If something needs fixing, the job shows <b>Needs corrections</b> until new photos are sent; then the engineer issues a clear letter. Jobs on hold need a payment update{owner ? <> under <a href="/billing">Billing</a></> : " from your company owner"}.</p>
       </div>
     </>
   );
