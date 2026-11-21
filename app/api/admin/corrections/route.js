@@ -5,7 +5,7 @@ import { recordLetter } from "../../../../lib/letterRecord";
 import { isOffice } from "../../../../lib/roles";
 import {
   listRounds, openRound, startRound, updateRound, cancelRound, makeCorrectionsLetter, sendCorrectionsLetter,
-  makeClearLetter, chargeFeeNow, MISSING,
+  makeClearLetter, chargeFeeNow, refundFee, MISSING,
 } from "../../../../lib/corrections";
 
 export const runtime = "nodejs";
@@ -29,7 +29,7 @@ export async function POST(req) {
   if (!sub) return bad("Job not found", 404);
   const me = auth.profile;
   const origin = new URL(req.url).origin;
-  if (["fee_charge", "fee_waive"].includes(b.action) && me && !isOffice(me)) return bad("Only the office can change payments.", 403);
+  if (["fee_charge", "fee_waive", "fee_refund"].includes(b.action) && me && !isOffice(me)) return bad("Only the office can change payments.", 403);
 
   const { rounds, missing, error } = await listRounds(db, sub.id);
   if (missing) return bad(MISSING, 500);
@@ -102,6 +102,14 @@ export async function POST(req) {
         if (r.fee_status === "failed") return reply({ warning: "The charge didn't go through. The company has been emailed to update their payment method." });
         if (r.fee_status === "unpaid") return reply({ warning: "This company has no usable payment method on file." });
         return reply(r.emailed ? { message: `Pay link emailed to ${r.emailed.join(", ") || "no one (no contacts found)"}.` } : {});
+      }
+      case "fee_refund": { // { roundId, amount (dollars; blank = the rest), reason }
+        const target = rounds.find((r) => r.id === b.roundId);
+        if (!target || !(target.fee_cents > 0) || !["paid", "refunded"].includes(target.fee_status)) return bad("There's no paid re-inspection fee to refund.");
+        const cents = b.amount === "" || b.amount == null ? null : parseDollars(b.amount);
+        if (Number.isNaN(cents)) return bad("Enter an amount like 20 or 20.00.");
+        await refundFee(db, sub, target, { amountCents: cents, reason: String(b.reason || "").trim().slice(0, 400), by: me && me.id });
+        return reply({ message: "Refund sent. The company gets a receipt." });
       }
       default:
         return bad("Unknown action");

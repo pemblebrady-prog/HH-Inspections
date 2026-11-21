@@ -26,7 +26,7 @@ export default function CompaniesAdmin() {
   return (
     <>
       <DefaultPrice cents={d.defaultPriceCents} affected={onDefault} onSaved={load} />
-      <DefaultReinspection cents={d.defaultReinspectionCents || 0} onSaved={load} />
+      <DefaultReinspection cents={d.defaultReinspectionCents || 0} reminders={Boolean(d.followupReminders)} onSaved={load} />
 
       <section className="card" style={{ marginTop: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 10 }}>
@@ -128,7 +128,14 @@ function DefaultPrice({ cents, affected, onSaved }) {
 }
 
 // Failed inspections: the fee Ron/office starts from when they send a corrections letter (they can change it per job).
-function DefaultReinspection({ cents, onSaved }) {
+function DefaultReinspection({ cents, reminders, onSaved }) {
+  const [remind, setRemind] = useState(reminders);
+  async function toggleRemind(on) {
+    setRemind(on); setErr(""); setMsg("");
+    const r = await api("/api/admin/settings", json("PATCH", { followupReminders: on }));
+    if (!r.ok) { setRemind(!on); setErr(r.error || "Couldn't save"); return; }
+    setMsg(on ? "Follow-up reminders are on." : "Follow-up reminders are off.");
+  }
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState("");
   const [busy, setBusy] = useState(false);
@@ -161,6 +168,10 @@ function DefaultReinspection({ cents, onSaved }) {
         </div>
       )}
       {editing && !valid && val && <p className="err">Enter a fee like 35 or 0.</p>}
+      <label className="checkrow" style={{ marginTop: 16, marginBottom: 0 }}>
+        <input type="checkbox" checked={remind} onChange={(e) => toggleRemind(e.target.checked)} />
+        <span><b style={{ fontWeight: 600 }}>Follow-up reminder emails (optional)</b><br /><span className="sub">If the follow-up hasn't come in 3 and 7 days after the corrections letter, email whoever is doing it (or the office, if no one is assigned). Off unless you turn it on.</span></span>
+      </label>
       {err && <p className="err">{err}</p>}
     </section>
   );
