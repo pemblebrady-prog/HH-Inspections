@@ -9,7 +9,7 @@ import { SITE_ROLES, COMPANY_ROLES } from "../../../lib/roles";
 // Staff can also have a company role, but only at House & Home (e.g. Ron: Engineer + Inspector at House & Home).
 // Layout (Brady, Nov 21): staff are listed once under Site-wide with just their site-wide role; every company
 // role, House & Home's included, is listed under Company roles, so House & Home looks like any other company.
-const BLANK = { email: "", fullName: "", siteRole: "", companyId: "", companyRole: "inspector", newCompany: "" };
+const BLANK = { email: "", fullName: "", siteRole: "", companyId: "", companyRole: "inspector", newCompany: "", sendEmail: true };
 
 export default function People() {
   const [people, setPeople] = useState(null);
@@ -72,7 +72,8 @@ export default function People() {
     }).then((r) => r.json()).catch((e) => ({ ok: false, error: String(e) }));
     setBusy(false);
     if (apply(d)) {
-      setMsg(d.emailed ? `Invited ${form.email} and sent them a welcome email.`
+      setMsg(d.skipped ? `Added ${form.email}. No email was sent; they can sign in at this portal with their email whenever you're ready.`
+        : d.emailed ? `Invited ${form.email} and sent them a welcome email.`
         : `Added ${form.email}. The welcome email didn't send, so tell them to sign in at this portal with their email.`);
       setForm(BLANK); setRoleTouched(false);
     }
@@ -160,9 +161,13 @@ export default function People() {
               ? <p className="hint" style={{ marginTop: 0 }}>This company has no owner yet, so they'll be its <b>owner</b>: they set up billing and invite their own team. They can still submit jobs themselves.</p>
               : <p className="warnbox" style={{ marginTop: 0 }}>This company has no owner yet. The first person is usually the owner (sets up billing, invites the team, and can still inspect).{" "}
                   <button type="button" className="linklike" onClick={() => setForm((f) => ({ ...f, companyRole: "company_owner" }))}>Make them the owner</button></p>)}
+            <label className="hint" style={{ display: "flex", gap: 8, alignItems: "center", margin: "0 0 14px" }}>
+              <input type="checkbox" checked={form.sendEmail} onChange={(e) => setForm((f) => ({ ...f, sendEmail: e.target.checked }))} style={{ width: "auto" }} />
+              Send them a welcome email
+            </label>
             {err && <p className="err">{err}</p>}
             {msg && <p className="ok-msg">{msg}</p>}
-            <button className="btn" type="submit" disabled={busy}>{busy ? "Inviting…" : "Send invite"}</button>
+            <button className="btn" type="submit" disabled={busy}>{busy ? (form.sendEmail ? "Inviting…" : "Adding…") : form.sendEmail ? "Send invite" : "Add without emailing"}</button>
           </form>
         </section>
 

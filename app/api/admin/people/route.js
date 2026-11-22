@@ -67,7 +67,7 @@ export async function GET() {
   }
 }
 
-// Invite a person. Body: { email, fullName, siteRole, companyId, companyRole, newCompany }
+// Invite a person. Body: { email, fullName, siteRole, companyId, companyRole, newCompany, sendEmail (default true) }
 export async function POST(req) {
   const c = await ctx(); if (c.error) return c.error;
   let body;
@@ -96,10 +96,10 @@ export async function POST(req) {
     const r = await invitePerson(c.db, {
       email, fullName, siteRole: s.siteRole, companyRole: s.companyRole, companyId: s.companyId,
       invitedBy: c.me && (c.me.full_name || "House & Home"),
-      origin: new URL(req.url).origin,
+      origin: new URL(req.url).origin, sendWelcome: body.sendEmail !== false,
     });
     if (!r.ok) return bad(r.error, r.status || 400);
-    return NextResponse.json({ ok: true, emailed: r.emailed, ...(await listAll(c.db)) });
+    return NextResponse.json({ ok: true, emailed: r.emailed, skipped: Boolean(r.skipped), ...(await listAll(c.db)) });
   } catch (err) {
     console.error("invite error", err);
     return bad(err.message || "Invite failed", 500);
