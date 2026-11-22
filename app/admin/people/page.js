@@ -183,7 +183,9 @@ export default function People() {
                   <tr key={p.id} style={p.active ? null : { opacity: 0.55 }}>
                     <td>{p.full_name || "—"}{p.id === me ? " (you)" : ""}{p.site_role === "engineer" && <div><a className="hint" href={`/admin/engineer?id=${p.id}`}>PE details →</a></div>}</td>
                     <td>{p.email}</td>
-                    <td>{siteSelect(p)}</td>
+                    <td>{siteSelect(p)}{!p.company_id && internal && (
+                      <div><button type="button" className="linklike hint" onClick={() => update(p.id, { companyId: internal.id, companyRole: "inspector" })}>+ Add a role at {internal.name}</button></div>
+                    )}</td>
                     {statusCell(p)}
                   </tr>
                 ))}
