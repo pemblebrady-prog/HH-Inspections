@@ -205,10 +205,9 @@ export default function People() {
                   {(canSite ? others : [...shown].sort(byCompany)).map((p) => {
                     const isStaff = Boolean(p.site_role);
                     const locked = !canSite && isStaff; // office managers can't change staff
-                    const siteLabel = isStaff ? (SITE_ROLES.find(([v]) => v === p.site_role) || [, p.site_role])[1] : "";
                     return (
                       <tr key={p.id} style={p.active ? null : { opacity: 0.55 }}>
-                        <td>{p.full_name || "—"}{p.id === me ? " (you)" : ""}{isStaff && <div className="hint">Also {siteLabel} (site-wide)</div>}</td>
+                        <td>{p.full_name || "—"}{p.id === me ? " (you)" : ""}</td>
                         <td>{p.email}</td>
                         <td>
                           <select value={p.company_id || ""} disabled={locked} onChange={(e) => update(p.id, { companyId: e.target.value })} aria-label={`Company for ${p.email}`}>
