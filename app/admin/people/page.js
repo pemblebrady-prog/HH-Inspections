@@ -7,6 +7,8 @@ import { SITE_ROLES, COMPANY_ROLES } from "../../../lib/roles";
 //   Site-wide (House & Home staff, admins only): Admin, Office manager, Engineer. No company needed.
 //   Company role at one company: Company owner, Office manager, Inspector.
 // Staff can also have a company role, but only at House & Home (e.g. Ron: Engineer + Inspector at House & Home).
+// Layout (Brady, Nov 21): staff are listed once under Site-wide with just their site-wide role; every company
+// role, House & Home's included, is listed under Company roles, so House & Home looks like any other company.
 const BLANK = { email: "", fullName: "", siteRole: "", companyId: "", companyRole: "inspector", newCompany: "" };
 
 export default function People() {
@@ -86,7 +88,9 @@ export default function People() {
 
   const shown = (people || []).filter((p) => showInactive || p.active);
   const staff = shown.filter((p) => p.site_role);
-  const others = shown.filter((p) => !p.site_role);
+  // Everyone with a company role (staff too, e.g. Ron as an inspector at House & Home), plus anyone with no role at all.
+  const byCompany = (a, b) => (coName(a.company_id) || "~").localeCompare(coName(b.company_id) || "~") || (a.full_name || a.email).localeCompare(b.full_name || b.email);
+  const others = shown.filter((p) => p.company_id || !p.site_role).sort(byCompany);
 
   const statusCell = (p, locked) => (
     <td>
@@ -173,23 +177,17 @@ export default function People() {
         {people && canSite && (
           <div className="table-wrap" style={{ marginBottom: 26 }}>
             <table className="track">
-              <thead><tr><th>Name</th><th>Email</th><th>Site-wide role</th><th>Role at House &amp; Home</th><th>Status</th></tr></thead>
+              <thead><tr><th>Name</th><th>Email</th><th>Site-wide role</th><th>Status</th></tr></thead>
               <tbody>
                 {staff.map((p) => (
                   <tr key={p.id} style={p.active ? null : { opacity: 0.55 }}>
                     <td>{p.full_name || "—"}{p.id === me ? " (you)" : ""}{p.site_role === "engineer" && <div><a className="hint" href={`/admin/engineer?id=${p.id}`}>PE details →</a></div>}</td>
                     <td>{p.email}</td>
                     <td>{siteSelect(p)}</td>
-                    <td>
-                      <select value={p.company_id ? p.company_role || "inspector" : ""} onChange={(e) => update(p.id, e.target.value ? { companyId: internal && internal.id, companyRole: e.target.value } : { companyId: "" })} aria-label={`Role at House & Home for ${p.email}`}>
-                        <option value="">None</option>
-                        {COMPANY_ROLES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                      </select>
-                    </td>
                     {statusCell(p)}
                   </tr>
                 ))}
-                {!staff.length && <tr><td colSpan={5} className="hint">No site-wide roles yet.</td></tr>}
+                {!staff.length && <tr><td colSpan={4} className="hint">No site-wide roles yet.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -200,23 +198,24 @@ export default function People() {
             {canSite && <div className="track-head"><h2>Company roles</h2></div>}
             <div className="table-wrap">
               <table className="track">
-                <thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Role</th>{canSite && <th>Site-wide</th>}<th>Status</th></tr></thead>
+                <thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Role</th><th>Status</th></tr></thead>
                 <tbody>
-                  {(canSite ? others : shown).map((p) => {
-                    const locked = !canSite && Boolean(p.site_role); // office managers can't change staff
+                  {(canSite ? others : [...shown].sort(byCompany)).map((p) => {
+                    const isStaff = Boolean(p.site_role);
+                    const locked = !canSite && isStaff; // office managers can't change staff
+                    const siteLabel = isStaff ? (SITE_ROLES.find(([v]) => v === p.site_role) || [, p.site_role])[1] : "";
                     return (
                       <tr key={p.id} style={p.active ? null : { opacity: 0.55 }}>
-                        <td>{p.full_name || "—"}{p.id === me ? " (you)" : ""}{locked && <div className="hint">House &amp; Home staff</div>}</td>
+                        <td>{p.full_name || "—"}{p.id === me ? " (you)" : ""}{isStaff && <div className="hint">Also {siteLabel} (site-wide)</div>}</td>
                         <td>{p.email}</td>
                         <td>
                           <select value={p.company_id || ""} disabled={locked} onChange={(e) => update(p.id, { companyId: e.target.value })} aria-label={`Company for ${p.email}`}>
                             <option value="">None</option>
-                            {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            {(isStaff ? companies.filter((c) => c.is_internal) : companies).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                           </select>
                         </td>
                         <td>{companyRoleSelect(p, locked && p.site_role === "admin")}</td>
-                        {canSite && <td>{siteSelect(p)}</td>}
-                        {statusCell(p, locked)}
+                        {statusCell(p, locked || (canSite && isStaff))}
                       </tr>
                     );
                   })}
