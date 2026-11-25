@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, compress, hudProblems } from "../lib/formConfig";
+import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, UNSORTED, compress, hudProblems } from "../lib/formConfig";
+import { isPhotoFile, readablePhoto } from "../lib/heic";
 import { DEMO_REPORT, isDemoUrl, loadDemoPhoto } from "../lib/demoData";
 import { idbGet, idbSet, idbDel, savePhoto, loadPhoto, deletePhoto, newId } from "../lib/offlineStore";
 import { runQueue, unfinishedQueues, queueKey } from "../lib/uploadQueue";
@@ -8,7 +9,10 @@ import { photoQuality } from "../lib/photoQuality";
 import { sendAhead, cancelAhead, markKnown, onEarlyChange } from "../lib/earlyUpload";
 
 const DRAFT_KEY = "draft";
-const emptyPhotos = () => Object.fromEntries(PHOTO_SLOTS.map((s) => [s.id, []]));
+// All photos go in one list (Nov 24: one "Upload pictures" button; the engineer sorts them on review).
+// An item can still carry a slot (sample photos in demo mode, drafts saved before the change).
+const emptyPhotos = () => ({ unsorted: [] });
+const slotOf = (id) => PHOTO_SLOTS.find((s) => s.id === id);
 
 export function useSubmissionForm(profile) {
   const myCompany = profile && profile.company && !profile.company.is_internal ? profile.company.name : "";
@@ -18,7 +22,7 @@ export function useSubmissionForm(profile) {
     ...Object.fromEntries(SINGLE.map((s) => [s.id, ""])),
     ...Object.fromEntries(MULTI.map((m) => [m.id, []])),
     ...Object.fromEntries(DETAILS.map((d) => [d.id, ""])),
-    generalComments: "",
+    deficiencyNotes: "", generalComments: "",
   });
   const [f, setF] = useState(blank);
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
@@ -36,11 +40,11 @@ export function useSubmissionForm(profile) {
   // Photos: each is { id, file, url }. Shrunk on the phone and saved locally as soon as it's added.
   const [sketch, setSketch] = useState([]);
   const [photos, setPhotos] = useState(emptyPhotos);
-  async function prepare(file, quality) {
-    const small = await compress(file, 1800, quality);
+  async function prepare(file, quality, slot) {
+    const small = await compress(await readablePhoto(file), 1800, quality);
     const id = newId();
     await savePhoto(id, small);
-    return { id, file: small, url: URL.createObjectURL(small) };
+    return { id, file: small, url: URL.createObjectURL(small), ...(slot ? { slot } : {}) };
   }
   // ---------- Photo checks (hints only, never a block) ----------
   // checks[photoId] = { dark, blurry, checking, matches, shows, unusable }
@@ -50,6 +54,7 @@ export function useSubmissionForm(profile) {
   async function checkPhoto(item, slotId) {
     const q = await photoQuality(item.file);
     if (q) setCheck(item.id, { dark: q.dark, blurry: q.blurry });
+    if (!slotId || slotId === "unsorted") return; // no section to check against
     if (typeof navigator !== "undefined" && navigator.onLine === false) return; // no signal: skip the smart check
     setCheck(item.id, { checking: true });
     try {
@@ -64,24 +69,26 @@ export function useSubmissionForm(profile) {
           dataPlate: c.dataPlate || (t && t.dataPlate) || null,
         }));
         // Fill empty fields straight away; otherwise offer the photo's reading.
-        setF((s) => ({
-          ...s,
-          hudTagNumbers: s.hudTagNumbers || [...new Set(c.hudTags || [])].join(", "),
-          ageOfHome: s.ageOfHome || (c.dataPlate && c.dataPlate.yearBuilt) || "",
-        }));
+        setF((s) => ({ ...s, ageOfHome: s.ageOfHome || (c.dataPlate && c.dataPlate.yearBuilt) || "" }));
       }
     } catch { setCheck(item.id, { checking: false }); }
   }
-  const addTo = (slotId) => async (list) => {
-    const files = Array.from(list).filter((x) => x.type.startsWith("image/"));
-    const next = [];
-    for (const file of files) next.push(await prepare(file));
-    setPhotos((p) => ({ ...p, [slotId]: [...p[slotId], ...next] }));
-    if (!demo) next.forEach((item) => { checkPhoto(item, slotId); sendAhead(item.id); });
+  const [adding, setAdding] = useState(0);
+  const addTo = (slotId = "unsorted") => async (list) => {
+    const files = Array.from(list || []).filter(isPhotoFile);
+    if (!files.length) return;
+    setAdding((n) => n + 1);
+    try {
+      for (const file of files) { // one at a time, so a big batch shows up as it goes and the phone keeps up
+        const item = await prepare(file);
+        setPhotos((p) => ({ ...p, [slotId]: [...(p[slotId] || []), item] }));
+        if (!demo) { checkPhoto(item, slotId); sendAhead(item.id); }
+      }
+    } finally { setAdding((n) => n - 1); }
   };
-  const removeFrom = (slotId) => (i) => setPhotos((p) => {
-    const gone = p[slotId][i]; if (gone) { deletePhoto(gone.id); cancelAhead(gone.id); }
-    return { ...p, [slotId]: p[slotId].filter((_, idx) => idx !== i) };
+  const removeFrom = (slotId = "unsorted") => (i) => setPhotos((p) => {
+    const gone = (p[slotId] || [])[i]; if (gone) { deletePhoto(gone.id); cancelAhead(gone.id); }
+    return { ...p, [slotId]: (p[slotId] || []).filter((_, idx) => idx !== i) };
   });
   const addSketch = async (list) => {
     const one = Array.from(list).find((x) => x.type.startsWith("image/"));
@@ -131,11 +138,15 @@ export function useSubmissionForm(profile) {
       if (d && d.f) {
         const loadList = async (list) => {
           const out = [];
-          for (const m of list || []) { const file = await loadPhoto(m.id); if (file) out.push({ id: m.id, file, url: URL.createObjectURL(file) }); }
+          for (const m of list || []) { const file = await loadPhoto(m.id); if (file) out.push({ id: m.id, file, url: URL.createObjectURL(file), ...(m.slot ? { slot: m.slot } : {}) }); }
           return out;
         };
+        // Everything goes in the one list; photos from a draft saved in sections keep their section.
         const p = emptyPhotos();
-        for (const slot of PHOTO_SLOTS) p[slot.id] = await loadList(d.photos && d.photos[slot.id]);
+        for (const [key, list] of Object.entries(d.photos || {})) {
+          const items = await loadList((list || []).map((m) => ({ ...m, slot: m.slot || (key !== "unsorted" ? key : undefined) })));
+          p.unsorted.push(...items);
+        }
         const sk = await loadList(d.sketch);
         if (cancelled) return;
         const hasContent = (d.f.propertyAddress || d.f.clientName) || sk.length || Object.values(p).some((a) => a.length);
@@ -156,8 +167,8 @@ export function useSubmissionForm(profile) {
   useEffect(() => {
     if (!loaded.current || resuming) return;
     const t = setTimeout(() => {
-      const meta = (arr) => arr.map((x) => ({ id: x.id }));
-      idbSet(DRAFT_KEY, { v: 1, f, photos: Object.fromEntries(PHOTO_SLOTS.map((s) => [s.id, meta(photos[s.id])])), sketch: meta(sketch), savedAt: Date.now() });
+      const meta = (arr) => arr.map((x) => (x.slot ? { id: x.id, slot: x.slot } : { id: x.id }));
+      idbSet(DRAFT_KEY, { v: 2, f, photos: { unsorted: meta(photos.unsorted || []) }, sketch: meta(sketch), savedAt: Date.now() });
     }, 1000);
     return () => clearTimeout(t);
   }, [f, photos, sketch, resuming]);
@@ -186,7 +197,8 @@ export function useSubmissionForm(profile) {
       setInvalid({});
       const sk = await prepare((await loadDemoPhoto("sketch")).file);
       const p = emptyPhotos();
-      for (const slot of PHOTO_SLOTS) p[slot.id] = [await prepare((await loadDemoPhoto(slot.id)).file)];
+      // Sample photos come already sorted, so the practice letter shows them in place.
+      for (const slot of PHOTO_SLOTS) p.unsorted.push(await prepare((await loadDemoPhoto(slot.id)).file, undefined, slot.id));
       setSketch([sk]); setPhotos(p);
     } catch (err) {
       alert("Couldn't load sample photos: " + err.message);
@@ -267,8 +279,12 @@ export function useSubmissionForm(profile) {
     setBusy(true); setProgress(0); setUpload(null);
     const items = [];
     sketch.forEach((p) => items.push({ photoId: p.id, name: "Home Sketch.jpg", label: "Home Sketch", slot: "sketch", done: false }));
-    PHOTO_SLOTS.forEach((slot) => {
-      photos[slot.id].forEach((p, i) => items.push({ photoId: p.id, name: `${slot.n} ${slot.label} - ${i + 1}.jpg`, label: slot.label, slot: slot.id, done: false }));
+    const counts = {};
+    Object.values(photos).flat().forEach((p) => {
+      const slot = slotOf(p.slot) || UNSORTED;
+      counts[slot.id] = (counts[slot.id] || 0) + 1;
+      const name = slot.id === "unsorted" ? `Photo ${String(counts[slot.id]).padStart(2, "0")}.jpg` : `${slot.n} ${slot.label} - ${counts[slot.id]}.jpg`;
+      items.push({ photoId: p.id, name, label: slot.label, slot: slot.id, done: false });
     });
     const q = { clientId: newId(), createdAt: Date.now(), report: { ...f }, demo, items, ref: null, finished: false };
     const stored = await idbSet(queueKey(q.clientId), q);
@@ -278,7 +294,7 @@ export function useSubmissionForm(profile) {
     return r.ok;
   }
 
-  return { f, set, setVal, toggle, companies, sketch, addSketch, setSketch: clearSketch, photos, addTo, removeFrom,
+  return { f, set, setVal, toggle, companies, sketch, addSketch, setSketch: clearSketch, photos, addTo, removeFrom, adding: adding > 0,
     invalid, validate, totalPhotos, busy, progress, upload, result, payAndSubmit, demo, demoLoading, fillDemo, profile,
     restoredAt, startOver, leaveOrder, resuming, retryUpload, orderInfo, checks, tagFind, sentAhead, confirmHud };
 }

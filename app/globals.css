@@ -343,7 +343,7 @@ body:has(.wiz-nav) .install-bar{bottom:calc(80px + env(safe-area-inset-bottom))}
 .sk-top b{font-size:1.05rem}
 .sk-link{background:none;border:0;color:var(--steel);font:inherit;font-weight:600;cursor:pointer;padding:6px}
 .sk-note{margin:0;padding:6px 14px;background:#f9eeda;font-size:.85rem;color:#6b4a12}
-.sk-canvas{flex:1;min-height:0;padding:8px;background:#eef1f3}
+.sk-canvas{flex:1;min-height:0;padding:8px;background:#eef1f3;position:relative}
 .sk-canvas svg{background:#fff;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .sk-panel{background:#fff;border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom));max-height:46vh;overflow:auto}
 .sk-tags{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px;margin-bottom:10px}
@@ -430,3 +430,36 @@ html.embedded .shell { padding-top: 8px; padding-bottom: 24px; }
 /* Refund history on the job page */
 .refund-list{list-style:none;margin:10px 0 0;padding:0}
 .refund-list li{border-top:1px solid var(--line);padding:7px 0;font-size:14px}
+
+/* One upload for all photos (Nov 24) */
+.upzone{border:2px dashed var(--steel);border-radius:8px;background:rgba(44,110,140,.06);padding:22px 16px;text-align:center}
+.upzone.drag{background:rgba(44,110,140,.15)}
+.upzone-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.upzone-btns .btn{min-width:160px}
+.take-another{display:block;width:100%;margin-top:12px;padding:16px;font-size:1.05rem}
+/* Comment boxes with voice typing */
+.dictate-head{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.dictate-head label{margin-bottom:6px}
+.mic{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:.85rem;padding:6px 12px;margin-bottom:6px;
+  border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);cursor:pointer}
+.mic.on{background:#A2382A;border-color:#A2382A;color:#fff;animation:micpulse 1.4s ease-in-out infinite}
+@keyframes micpulse{50%{box-shadow:0 0 0 6px rgba(162,56,42,.18)}}
+/* Engineer sorts photos into sections */
+.sort-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;top:64px;z-index:5;background:var(--paper);padding:8px 0;border-bottom:1px solid var(--line)}
+.sort-bar select{width:auto;min-width:240px;padding:7px 10px}
+.sort-head{font-weight:600;margin:6px 0 8px}
+.photo.sortable{position:relative}
+.photo.sortable select{padding:5px 6px;font-size:12px}
+.photo.picked img{outline:3px solid var(--steel);outline-offset:-3px}
+.photo-pick{position:absolute;top:6px;left:6px;background:#fff;border-radius:4px;padding:2px 4px;line-height:0;box-shadow:0 1px 3px #0003}
+.photo-pick input{width:20px;height:20px;margin:0}
+/* Sketch zoom + drag-from-key ghost (Nov 24) */
+.sk-zoom{position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;gap:6px}
+.sk-zoom button{width:40px;height:40px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:22px;line-height:1;color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12);cursor:pointer}
+.sk-zoom button:disabled{opacity:.4}
+.sk-zoom .sk-fit{font-size:12px;font-weight:600}
+.sk-ghost{position:fixed;transform:translate(-50%,-120%);pointer-events:none;z-index:1000;background:#fff;border:2px solid var(--steel);border-radius:4px;padding:4px 8px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.sk-keylist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 14px}
+.sk-keylist div{display:flex;align-items:center;gap:8px}
+.sk-keybox{display:inline-block;min-width:30px;text-align:center;border:2px solid #1d2a33;padding:2px 4px;font-weight:700;background:#fff}
+.sk-keybox.red{border-color:#b3261e}

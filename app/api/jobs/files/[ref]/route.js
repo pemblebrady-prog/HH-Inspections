@@ -3,7 +3,7 @@ import { requireUser, createAdminClient } from "../../../../../lib/supabase/serv
 import { getDrive } from "../../../../../lib/drive";
 import { canSeeJob } from "../../../../../lib/jobAccess";
 import { isStaff } from "../../../../../lib/roles";
-import { canAddToJob, addJobFile, removeJobFile, alertFilesAdded } from "../../../../../lib/jobFiles";
+import { canAddToJob, addJobFile, removeJobFile, alertFilesAdded, moveJobFiles } from "../../../../../lib/jobFiles";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -75,4 +75,15 @@ export async function PUT(req, { params }) {
     await alertFilesAdded(c.db, c.sub, { by: c.me && (c.me.full_name || c.me.email), added, removed, origin: new URL(req.url).origin });
   }
   return NextResponse.json({ ok: true });
+}
+
+// Staff: sort photos into sections. Body: { ids: [photo ids], slot }
+export async function PATCH(req, { params }) {
+  const c = await load(decodeURIComponent(params.ref)); if (c.error) return c.error;
+  if (!isStaff(c.me)) return bad("Only House & Home staff can sort photos.", 403);
+  let b; try { b = await req.json(); } catch { return bad("Bad request"); }
+  try {
+    const r = await moveJobFiles(c.db, c.sub, b.ids, String(b.slot || ""));
+    return NextResponse.json({ ok: true, photos: r.photos });
+  } catch (e) { return bad(e.message || "Couldn't move the photos", e.code ? 500 : 400); }
 }

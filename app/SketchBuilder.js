@@ -5,12 +5,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 // the inspector adds porches/additions, drags letter tags from the key, sets north and
 // the street, and saves it as the "Home Sketch" image (with measurements and the key).
 
-export const TAGS = [
-  ["A", "Entry Access", "k"], ["T", "Tie Down", "k"], ["C", "Cert. Label", "k"], ["AS", "Attached St.", "k"],
-  ["P", "Pier", "r"], ["B", "Beam", "r"], ["R", "Railing", "r"], ["S", "Stairs", "r"], ["W", "Wood", "r"],
-  ["K", "Skirting", "r"], ["M", "Belly Wrap", "r"], ["I", "Insulation", "r"], ["D", "Drainage", "r"],
-  ["N", "No Access", "r"], ["V", "Vents", "r"], ["AX", "Axles", "r"],
-];
+import { TAGS } from "../lib/sketchKey";
+export { TAGS };
 const INK = "#1d2a33", RED = "#b3261e", FILL = "#cfe0ea", FILL2 = "#dfeaf0";
 // Attached structures: [type, typical starting size as [along the home, out from the home] in feet, quick sizes].
 export const STRUCTURES = [
@@ -158,6 +154,26 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
   const commit = (next) => { setHist((h) => [...h.slice(-49), data]); setData(next); };
   const undo = () => setHist((h) => { if (!h.length) return h; setData(h[h.length - 1]); setSel(null); return h.slice(0, -1); });
 
+  // Zoom (Nov 24): pinch with two fingers, Ctrl/trackpad-pinch scroll on a computer, or the + / − buttons.
+  // view is the visible part of the drawing in world feet; null shows it all.
+  const [view, setView] = useState(null);
+  const clampView = (v) => {
+    if (!v) return null;
+    const w = Math.max(lay.W / 6, Math.min(lay.W, v.w)), h = w * (lay.H / lay.W);
+    if (w >= lay.W - 0.01) return null;
+    return { w, h, x: Math.max(0, Math.min(lay.W - w, v.x)), y: Math.max(0, Math.min(lay.H - h, v.y)) };
+  };
+  const vb = clampView(view) || { x: 0, y: 0, w: lay.W, h: lay.H };
+  const zoomAt = (factor, cx, cy) => setView((cur) => {
+    const v = clampView(cur) || { x: 0, y: 0, w: lay.W, h: lay.H };
+    const w = v.w / factor, h = v.h / factor;
+    const px = cx == null ? v.x + v.w / 2 : cx, py = cy == null ? v.y + v.h / 2 : cy;
+    return clampView({ w, h, x: px - ((px - v.x) / v.w) * w, y: py - ((py - v.y) / v.h) * h });
+  });
+  const pointers = useRef(new Map()); // pointerId -> { x, y } (screen)
+  const pinch = useRef(null);
+  const tap = useRef(null);           // a tap on empty drawing: place a tag (or unselect) when the finger lifts
+
   const toWorld = (e) => {
     const svg = svgRef.current; const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
     const p = pt.matrixTransform(svg.getScreenCTM().inverse()); return { x: p.x, y: p.y };
@@ -171,7 +187,36 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
     drag.current = { ...what, start: p, before: data, item, moved: false };
     try { svgRef.current.setPointerCapture(e.pointerId); } catch {}
   }
+  function onCanvasPointerDownCapture(e) {
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.current.size === 2) { // second finger: zoom instead of placing or dragging
+      if (drag.current) { setData(drag.current.before); drag.current = null; }
+      tap.current = null;
+      const [a, b] = [...pointers.current.values()];
+      pinch.current = { dist: Math.hypot(a.x - b.x, a.y - b.y) || 1 };
+    }
+  }
   function onMove(e) {
+    if (pointers.current.has(e.pointerId)) pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch.current && pointers.current.size >= 2) {
+      const [a, b] = [...pointers.current.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+      const mid = toWorld({ clientX: (a.x + b.x) / 2, clientY: (a.y + b.y) / 2 });
+      zoomAt(dist / pinch.current.dist, mid.x, mid.y);
+      pinch.current.dist = dist;
+      return;
+    }
+    const t = tap.current;
+    if (t && !drag.current) { // one finger on empty drawing: pan when zoomed in
+      const dx = e.clientX - t.sx, dy = e.clientY - t.sy;
+      if (Math.abs(dx) + Math.abs(dy) > 8) t.moved = true;
+      if (t.moved && view) {
+        const rect = svgRef.current.getBoundingClientRect();
+        const k = Math.max(vb.w / rect.width, vb.h / rect.height);
+        setView(clampView({ ...t.view, x: t.view.x - dx * k, y: t.view.y - dy * k }));
+      }
+      return;
+    }
     const d = drag.current; if (!d) return;
     const p = toWorld(e); const dx = p.x - d.start.x, dy = p.y - d.start.y;
     if (Math.abs(dx) + Math.abs(dy) > 0.8) d.moved = true;
@@ -185,7 +230,15 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
       setData((cur) => ({ ...cur, structures: cur.structures.map((x) => (x.id === d.id ? { ...x, offset } : x)) }));
     }
   }
-  function onUp() {
+  function onUp(e) {
+    if (e && pointers.current.has(e.pointerId)) pointers.current.delete(e.pointerId);
+    if (pinch.current) { if (pointers.current.size < 2) pinch.current = null; tap.current = null; return; }
+    const t = tap.current;
+    if (t) {
+      tap.current = null;
+      if (!t.moved) { if (stamp) addTag(stamp, t.at); else setSel(null); }
+      return;
+    }
     const d = drag.current; if (!d) return;
     drag.current = null;
     if (d.moved) setHist((h) => [...h.slice(-49), d.before]); // one undo step per drag
@@ -203,11 +256,47 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
   }
   // Stamp mode: after picking a letter, every tap on the drawing drops another one, until Done.
   const [stamp, setStamp] = useState(null);
-  const pickTag = (code) => { setStamp(code); addTag(code); };
+  // Picking a tag doesn't drop one anywhere (Nov 24): tap the drawing where it goes, or drag it there.
+  const pickTag = (code) => { setStamp(code); setSel(null); };
+  const deleteAll = (code) => { commit({ ...data, tags: data.tags.filter((g) => g.code !== code) }); setSel(null); };
+  // Drag a tag from the key straight onto the drawing.
+  const [ghost, setGhost] = useState(null); // { code, x, y } while dragging from the key
+  const keyDrag = useRef(null);
+  function keyDown(e, code) {
+    keyDrag.current = { code, sx: e.clientX, sy: e.clientY, dragging: false, id: e.pointerId };
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
+  }
+  function keyMove(e) {
+    const k = keyDrag.current; if (!k || k.id !== e.pointerId) return;
+    if (!k.dragging && Math.abs(e.clientY - k.sy) > 10 && Math.abs(e.clientY - k.sy) > Math.abs(e.clientX - k.sx)) k.dragging = true;
+    if (k.dragging) setGhost({ code: k.code, x: e.clientX, y: e.clientY });
+  }
+  function keyUp(e) {
+    const k = keyDrag.current; keyDrag.current = null; setGhost(null);
+    if (!k || k.id !== e.pointerId) return;
+    if (!k.dragging) { pickTag(k.code); return; }
+    const r = svgRef.current.getBoundingClientRect();
+    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) { setStamp(k.code); addTag(k.code, toWorld(e)); }
+  }
+  const keyCancel = () => { keyDrag.current = null; setGhost(null); };
+  const keyProps = (code) => ({ onPointerDown: (e) => keyDown(e, code), onPointerMove: keyMove, onPointerUp: keyUp, onPointerCancel: keyCancel, style: { touchAction: "pan-x" } });
   const doneTags = () => { setStamp(null); setSel(null); };
   function onCanvasDown(e) {
-    if (stamp) { e.preventDefault(); addTag(stamp, toWorld(e)); } else setSel(null);
+    e.preventDefault();
+    if (pointers.current.size > 1) return;
+    tap.current = { at: toWorld(e), sx: e.clientX, sy: e.clientY, moved: false, view: vb };
+    try { svgRef.current.setPointerCapture(e.pointerId); } catch {}
   }
+  function onWheel(e) { // trackpad pinch / Ctrl+scroll zooms; plain scroll is left alone
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    const p = toWorld(e); zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, p.x, p.y);
+  }
+  useEffect(() => { // React's onWheel is passive, so attach it by hand to be able to stop the page zooming
+    const el = svgRef.current; if (!el) return undefined;
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  });
   const [picking, setPicking] = useState(false);
   function addStructure(type) {
     const def = STRUCTURES.find((x) => x[0] === type) || STRUCTURES[STRUCTURES.length - 1];
@@ -254,11 +343,17 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
       {!f.lengthFt || !f.widthFt ? <p className="sk-note">Tip: enter the home's length and width in Home basics so it's drawn to size (using a typical {(TYPICAL[kind(f.homeType)] || [64, 28]).join("' × ")}' {kind(f.homeType) ? kind(f.homeType) + "-wide" : "home"} for now).</p> : null}
 
       <div className="sk-canvas">
-        <svg ref={svgRef} viewBox={`0 0 ${lay.W} ${lay.H}`} preserveAspectRatio="xMidYMid meet" onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
-          onPointerDown={onCanvasDown} style={{ touchAction: "none", width: "100%", height: "100%", display: "block" }}>
+        <svg ref={svgRef} viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} preserveAspectRatio="xMidYMid meet" onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
+          onPointerDownCapture={onCanvasPointerDownCapture} onPointerDown={onCanvasDown} style={{ touchAction: "none", width: "100%", height: "100%", display: "block" }}>
           <Drawing f={f} data={data} lay={lay} selected={sel} onDown={onDown} />
         </svg>
+        <div className="sk-zoom" role="group" aria-label="Zoom">
+          <button type="button" onClick={() => zoomAt(1.4)} aria-label="Zoom in">+</button>
+          <button type="button" onClick={() => zoomAt(1 / 1.4)} aria-label="Zoom out" disabled={!view}>−</button>
+          {view && <button type="button" onClick={() => setView(null)} aria-label="Show the whole sketch" className="sk-fit">Fit</button>}
+        </div>
       </div>
+      {ghost && <div className="sk-ghost" style={{ left: ghost.x, top: ghost.y }} aria-hidden="true">{ghost.code}</div>}
 
       <div className="sk-panel">
         {selStruct ? (
@@ -301,30 +396,31 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
           <div>
             <div className="sk-tags" aria-label="Pick a tag, then tap the drawing to place it">
               {TAGS.map(([code, label, c]) => (
-                <button key={code} type="button" className={"sk-tag" + (c === "r" ? " red" : "") + (code === stamp ? " on" : "")} aria-pressed={code === stamp} onClick={() => pickTag(code)} title={label}>
+                <button key={code} type="button" className={"sk-tag" + (c === "r" ? " red" : "") + (code === stamp ? " on" : "")} aria-pressed={code === stamp} {...keyProps(code)} title={label}>
                   <b>{code}</b><span>{label}</span>
                 </button>
               ))}
             </div>
             <div className="sk-row">
-              <span className="sk-lbl">Adding {stamp}: {(TAGS.find((x) => x[0] === stamp) || [])[1]}</span>
-              <button type="button" className="btn ghost sk-small" onClick={() => addTag(stamp)}>+ Another {stamp}</button>
+              <span className="sk-lbl">Placing {stamp}: {(TAGS.find((x) => x[0] === stamp) || [])[1]}{data.tags.some((g) => g.code === stamp) ? ` (${data.tags.filter((g) => g.code === stamp).length} placed)` : ""}</span>
               {selTag && <button type="button" className="sk-del" onClick={remove}>Delete tag</button>}
+              {data.tags.some((g) => g.code === stamp) && <button type="button" className="sk-del" onClick={() => deleteAll(stamp)}>Delete all {stamp}</button>}
               <button type="button" className="sk-link" onClick={doneTags}>Done</button>
             </div>
-            <p className="sk-hint">Tap the drawing to drop another {stamp} there. Drag any tag to move it. Tap a different letter to switch.</p>
+            <p className="sk-hint">Tap the drawing where each {stamp} goes, or drag the {stamp} from the key onto the drawing. Drag a placed tag to move it.</p>
           </div>
         ) : selTag ? (
           <div className="sk-row">
             <span className="sk-lbl">{selTag.code}: {(TAGS.find((x) => x[0] === selTag.code) || [])[1]}</span>
             <button type="button" className="sk-del" onClick={remove}>Delete tag</button>
+            {data.tags.filter((g) => g.code === selTag.code).length > 1 && <button type="button" className="sk-del" onClick={() => deleteAll(selTag.code)}>Delete all {selTag.code}</button>}
             <button type="button" className="sk-link" onClick={() => setSel(null)}>Done</button>
           </div>
         ) : (
           <>
-            <div className="sk-tags" aria-label="Tap a tag to add it, then drag it into place">
+            <div className="sk-tags" aria-label="Tap a tag then tap the drawing, or drag a tag onto the drawing">
               {TAGS.map(([code, label, c]) => (
-                <button key={code} type="button" className={"sk-tag" + (c === "r" ? " red" : "")} onClick={() => pickTag(code)} title={label}>
+                <button key={code} type="button" className={"sk-tag" + (c === "r" ? " red" : "")} {...keyProps(code)} title={label}>
                   <b>{code}</b><span>{label}</span>
                 </button>
               ))}
@@ -349,7 +445,7 @@ export default function SketchBuilder({ f, initial, onSave, onClose, onHome }) {
               <label style={{ flex: 1 }}>Street<input value={data.street.name} placeholder="e.g. Wintergreen Rd" onChange={(e) => setData({ ...data, street: { ...data.street, name: e.target.value.slice(0, 40) } })} /></label>
               <label>Side<select value={data.street.side} onChange={(e) => commit({ ...data, street: { ...data.street, side: e.target.value } })}>{SIDES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
             </div>
-            <p className="sk-hint">Tap a tag, then tap the drawing to place as many as you need. Drag to move. Tap anything to edit or delete it.</p>
+            <p className="sk-hint">Tap a tag, then tap the drawing where it goes (as many as you need), or drag a tag onto the drawing. Pinch to zoom. Tap anything to edit or delete it. <a href="/help/sketch" target="_blank" rel="noreferrer">How to do the sketch</a></p>
           </>
         )}
         {/* Second save button down here, so nobody has to scroll back up (Brian, Nov 19). */}

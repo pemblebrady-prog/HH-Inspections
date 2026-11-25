@@ -3,6 +3,7 @@ import { requireUser, createAdminClient } from "../../../../lib/supabase/server"
 import { chargeSubmission, sendSubmissionEmails } from "../../../../lib/charges";
 import { alertNewSubmission } from "../../../../lib/alerts";
 import { generateLetter, companyForLetter } from "../../../../lib/letters";
+import { ensureDeficiencyDraft } from "../../../../lib/deficiencyDraft";
 import { engineerForJob } from "../../../../lib/engineers";
 import { paysByCard } from "../../../../lib/payPerJob";
 import { recordLetter } from "../../../../lib/letterRecord";
@@ -78,6 +79,7 @@ export async function POST(req) {
   // Draft letter (best effort).
   try {
     const engineer = await engineerForJob(db, sub);
+    if (!sub.is_demo) await ensureDeficiencyDraft(db, sub); // inspector's deficiency notes in Ron's wording
     const r = await generateLetter({ folderId: sub.drive_folder_id, report: sub.report || {}, company: await companyForLetter(db, sub), images, engineer });
     if (!r.simulated) await recordLetter(db, ["id", sub.id], r);
   } catch (e) { console.error("letter failed", e); }

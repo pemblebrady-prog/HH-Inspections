@@ -7,6 +7,7 @@ import AdminHeader from "../../../AdminHeader";
 import ReviewActions from "./ReviewActions";
 import PaymentActions from "./PaymentActions";
 import CorrectionsPanel from "./CorrectionsPanel";
+import PhotoSorter from "./PhotoSorter";
 import { listRounds, houseAndHomePeople, getDefaultReinspectionCents, suggestedCorrections } from "../../../../lib/corrections";
 import { engineerForJob } from "../../../../lib/engineers";
 import { defaultRecipients } from "../../../../lib/delivery";
@@ -66,6 +67,8 @@ export default async function ReviewJob({ params }) {
     ...DETAILS.map((d) => [d.label, f[d.id]]),
     ...SINGLE.slice(1).map((s) => [s.label, f[s.id]]),
     ...MULTI.map((m) => [m.label, (f[m.id] || []).join(", ")]),
+    ...(f.hudTagNumbers ? [["HUD tag numbers", f.hudTagNumbers]] : []), // older jobs
+    ["Explanation of deficiencies", f.deficiencyNotes],
     ["Comments", f.generalComments],
     ...(hudProblems(f).length ? [["HUD warning", `Can't be HUD certified: ${hudProblems(f).join("; ")}. The inspector chose to go ahead.`]] : []),
   ];
@@ -131,14 +134,7 @@ export default async function ReviewJob({ params }) {
           </div>
           {photos.some((p) => p.added_at) && <p className="hint" style={{ marginTop: 0 }}>Some photos were added after submitting{job.letter_link ? ". Tap Regenerate letter to put them in the letter" : ""}.</p>}
           {photos.length === 0 && <p className="hint">No photos recorded for this job yet. They appear once the inspector's upload finishes{job.drive_link ? "; you can also check the Drive folder" : ""}.</p>}
-          <div className="photo-grid">
-            {photos.map((p) => (
-              <a key={p.id} href={`/api/admin/photo?id=${encodeURIComponent(p.id)}`} target="_blank" rel="noreferrer" className="photo">
-                <img src={`/api/admin/photo?id=${encodeURIComponent(p.id)}`} alt={p.label} loading="lazy" />
-                <span>{p.label}{p.added_at ? " · added" : ""}</span>
-              </a>
-            ))}
-          </div>
+          {photos.length > 0 && <PhotoSorter jobRef={job.ref} photos={photos} hasLetter={Boolean(job.letter_link)} canSort={job.status !== "canceled"} />}
         </section>
       </div>
     </>

@@ -18,6 +18,7 @@ export default function SketchLauncher({ form, children }) {
         <span><b>{drawn ? "Edit the drawing" : "Draw the sketch"}</b>
           <small>{drawn ? "Your drawing is saved. Tap to change it." : "Tap here to lay out the home, porches and letter tags. It's drawn to scale for you."}</small></span>
       </button>
+      <p className="hint" style={{ margin: "0 0 8px" }}>New to the sketch? <a href="/help/sketch" target="_blank" rel="noreferrer">How to do the sketch</a></p>
       {hasSketch || showUpload ? children : (
         <button type="button" className="linklike" style={{ margin: "2px 0 14px" }} onClick={() => setShowUpload(true)}>Prefer paper? Upload a photo of a hand drawing instead</button>
       )}

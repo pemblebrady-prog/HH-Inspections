@@ -40,7 +40,7 @@ export default function OfflineSupport() {
     const t = setTimeout(() => {
       // The files this page is running on (loaded before the helper took over), plus the form and Help.
       const files = performance.getEntriesByType("resource").map((r) => r.name).filter((u) => u.includes("/_next/static/"));
-      const help = ["/help", ...GUIDES.map((g) => `/help?guide=${g.role}`), ...GUIDES.flatMap((g) => g.steps.flatMap((s) => (s.shots || []).map((x) => x.src)))];
+      const help = ["/help", "/help/sketch", ...GUIDES.map((g) => `/help?guide=${g.role}`), ...GUIDES.flatMap((g) => g.steps.flatMap((s) => (s.shots || []).map((x) => x.src)))];
       warmOffline([...new Set(["/", "/jobs", "/api/companies", "/api/orders/mine", ...files, ...help])]);
     }, 4000);
     return () => clearTimeout(t);

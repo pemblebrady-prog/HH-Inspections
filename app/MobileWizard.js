@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
-import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, FEE } from "../lib/formConfig";
+import { SINGLE, MULTI, FEE } from "../lib/formConfig";
 import PhotoSlot from "./PhotoSlot";
-import TagFinding from "./TagFinding";
+import PhotoUploader from "./PhotoUploader";
+import DictateField from "./DictateField";
 import SketchLauncher from "./SketchLauncher";
 import AppHeader from "./AppHeader";
 import UploadStatus, { PayNote, DontLeave } from "./UploadStatus";
@@ -56,7 +57,6 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
       render: () => (<>
         <Select s={byId("rain3")} f={f} set={set} />
         <Select s={byId("homeType")} f={f} set={set} />
-        <Select s={byId("attached")} f={f} set={set} />
         <Select s={byId("certTags")} f={f} set={set} />
         <Select s={byId("tieDowns")} f={f} set={set} />
       </>),
@@ -64,38 +64,45 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
     {
       title: "Tags, tie-downs & access",
       render: () => (<>
-        <Field id="hudTagNumbers" label="HUD tag numbers" f={f} set={set} placeholder="e.g. ARZ 249557, ARZ 249556" />
         <Field id="tieDownsPerSide" label="Tie-downs per side" f={f} set={set} placeholder="e.g. 10" />
         <Field id="crawlAccess" label="Crawlspace access location" f={f} set={set} placeholder="e.g. east side skirting" />
+        <Select s={byId("homeSet")} f={f} set={set} />
         <Select s={byId("grading")} f={f} set={set} />
         <Select s={byId("piersCondition")} f={f} set={set} />
         <Select s={byId("skirtingCondition")} f={f} set={set} />
+        <Select s={byId("ventingCondition")} f={f} set={set} />
         <Select s={byId("axles")} f={f} set={set} />
         <Select s={byId("homeMoved")} f={f} set={set} />
       </>),
     },
-    { title: "Skirting, venting & framing", render: () => <>{["skirting", "venting", "framing"].map((id) => <Chips key={id} m={MULTI.find((x) => x.id === id)} f={f} toggle={toggle} />)}</> },
+    {
+      title: "Skirting, venting, framing & attached structures",
+      render: () => (<>
+        {["skirting", "venting", "framing"].map((id) => <Chips key={id} m={MULTI.find((x) => x.id === id)} f={f} toggle={toggle} />)}
+        <Select s={byId("attached")} f={f} set={set} />
+      </>),
+    },
     { title: "Piers, insulation & moisture", render: () => <>{["piers", "insulation", "moisture"].map((id) => <Chips key={id} m={MULTI.find((x) => x.id === id)} f={f} toggle={toggle} />)}</> },
     {
-      title: "Home sketch & comments",
+      title: "Home sketch",
       render: () => (<>
         <SketchLauncher form={form}>
           <PhotoSlot big label="Home sketch" sub="Your saved drawing, or a photo of a hand drawing." items={sketch} onAdd={addSketch} onRemove={() => { setSketch([]); form.setVal("sketchData", null); }} max={1} sent={form.sentAhead} />
         </SketchLauncher>
-        <div className="field" style={{ marginTop: 16 }}><label htmlFor="generalComments">General comments</label><textarea id="generalComments" value={f.generalComments} onChange={set("generalComments")} /></div>
       </>),
+    },
+    {
+      title: "Comments",
+      render: () => <CommentFields f={f} setVal={form.setVal} />,
     },
   ];
 
-  // All photo sections on one scrolling page (Brian, Nov 14).
-  const filled = PHOTO_SLOTS.filter((s) => (photos[s.id] || []).length > 0).length;
+  // One upload for every photo (Nov 24); the engineer sorts them into sections on review.
   const photoScreens = [{
     title: "Photos",
     render: () => (<>
-      <p className="hint" style={{ marginBottom: 14 }}>Add as many photos as you need in each section. Skip any that don't apply. <b>{filled} of {PHOTO_SLOTS.length}</b> sections have photos.</p>
-      {PHOTO_SLOTS.map((slot) => (
-        <PhotoSlot key={slot.id} label={`${slot.n}. ${slot.label}`} items={photos[slot.id]} onAdd={addTo(slot.id)} onRemove={removeFrom(slot.id)} checks={form.checks} sent={form.sentAhead}>{slot.id === "p03" && <TagFinding find={form.tagFind} f={f} setVal={form.setVal} />}</PhotoSlot>
-      ))}
+      <p className="hint" style={{ marginBottom: 14 }}>Add all your photos for this job: all four sides, tags, grading, attached structures, framing, tie-downs, belly wrap, venting, insulation, skirting and any deficiencies. No need to sort them.</p>
+      <PhotoUploader items={photos.unsorted || []} onAdd={addTo("unsorted")} onRemove={removeFrom("unsorted")} checks={form.checks} sent={form.sentAhead} adding={form.adding} />
     </>),
   }];
 
@@ -155,6 +162,15 @@ export default function MobileWizard({ form, onSwitchView, switchLabel }) {
       </div>
     </div>
   );
+}
+
+export function CommentFields({ f, setVal }) {
+  return (<>
+    <DictateField id="deficiencyNotes" label="Explanation of deficiencies" value={f.deficiencyNotes || ""} onChange={(v) => setVal("deficiencyNotes", v)}
+      placeholder="Please explain any deficiencies noted during the inspection" />
+    <DictateField id="generalComments" label="General comments" value={f.generalComments || ""} onChange={(v) => setVal("generalComments", v)}
+      placeholder="Any comments to note for the engineer" />
+  </>);
 }
 
 function Field({ id, label, req, type, f, set, invalid = {}, placeholder }) {
