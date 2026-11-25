@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import SketchBuilder from "./SketchBuilder";
-import { PHOTO_SLOTS, compress } from "../lib/formConfig";
+import { PHOTO_SLOTS, UNSORTED, compress } from "../lib/formConfig";
 
-const SLOTS = [{ id: "sketch", n: "", label: "Home sketch" }, ...PHOTO_SLOTS];
+const SLOTS = [{ id: "sketch", n: "", label: "Home sketch" }, UNSORTED, ...PHOTO_SLOTS];
 
 // Add or replace photos and the sketch on a submitted job (lib/jobFiles.js). Each file uploads as soon
 // as it's picked; staff are told once when the inspector is done.
@@ -64,7 +64,7 @@ export default function JobPhotos({ jobRef, staff, photos: initial, home, hasLet
   async function finish() { await report(false); setDone(true); }
 
   const bySlot = (id) => photos.filter((p) => p.slot === id);
-  const shown = SLOTS.filter((s) => s.id === "sketch" || showAll || bySlot(s.id).length);
+  const shown = SLOTS.filter((s) => s.id === "sketch" || s.id === "unsorted" || showAll || bySlot(s.id).length);
   const hidden = SLOTS.length - shown.length;
 
   const picker = (slot, label, opts) => (

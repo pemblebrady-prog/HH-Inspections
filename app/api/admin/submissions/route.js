@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../../lib/supabase/server";
 import { generateLetter, companyForLetter } from "../../../../lib/letters";
+import { ensureDeficiencyDraft } from "../../../../lib/deficiencyDraft";
 import { chargeSubmission } from "../../../../lib/charges";
 import { deliverFinalLetter } from "../../../../lib/delivery";
 import { engineerForJob } from "../../../../lib/engineers";
@@ -75,6 +76,7 @@ export async function PATCH(req) {
       }
       const signer = auth.profile && auth.profile.role === "engineer" ? { ...sub, letter_engineer_id: auth.profile.id } : { ...sub, letter_engineer_id: null };
       const engineer = await engineerForJob(db, signer);
+      await ensureDeficiencyDraft(db, sub);
       const r = await generateLetter({ folderId: sub.drive_folder_id, report: sub.report || {}, company: await companyForLetter(db, sub), images: sub.photos || [], engineer });
       if (r.simulated) return NextResponse.json({ ok: false, error: "Google Drive isn't connected, so the letter can't be made." }, { status: 400 });
       await recordLetter(db, ["id", sub.id], r);

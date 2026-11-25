@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
-import { SINGLE, MULTI, DETAILS, PHOTO_SLOTS, FEE } from "../lib/formConfig";
+import { SINGLE, MULTI, DETAILS, FEE } from "../lib/formConfig";
 import PhotoSlot from "./PhotoSlot";
-import TagFinding from "./TagFinding";
+import PhotoUploader from "./PhotoUploader";
+import { CommentFields } from "./MobileWizard";
 import SketchLauncher from "./SketchLauncher";
 import AppHeader from "./AppHeader";
 import UploadStatus, { PayNote, DontLeave } from "./UploadStatus";
@@ -19,6 +20,7 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
   const internal = Boolean((co && co.is_internal) || staffOwn);
   const coName = co && !co.is_internal ? co.name : f.inspectionCompany;
   const price = co && co.price_cents != null ? co.price_cents / 100 : Number(FEE);
+  const attached = SINGLE.find((s) => s.id === "attached");
 
   return (
     <>
@@ -76,7 +78,7 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
             <fieldset>
               <legend>Home details</legend>
               <div className="row c2">
-                {SINGLE.slice(1).map((s) => (
+                {SINGLE.slice(1).filter((s) => s.id !== "attached").map((s) => (
                   <div className="field" key={s.id}>
                     <label htmlFor={s.id}>{s.label}</label>
                     <select id={s.id} value={f[s.id]} onChange={set(s.id)}>
@@ -100,8 +102,28 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
             </fieldset>
 
             <fieldset>
-              <legend>Structure &amp; crawlspace — check all that apply</legend>
-              {MULTI.map((m) => (
+              <legend>Skirting, venting, framing &amp; attached structures</legend>
+              {MULTI.filter((m) => ["skirting", "venting", "framing"].includes(m.id)).map((m) => (
+                <div key={m.id} style={{ marginBottom: 16 }}>
+                  <label style={{ marginBottom: 8 }}>{m.label}</label>
+                  <div className="chips">
+                    {m.opts.map((o) => (
+                      <button type="button" key={o} className={"chip" + (f[m.id].includes(o) ? " on" : "")} onClick={() => toggle(m.id, o)}>{o}</button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <div className="field" style={{ maxWidth: 420 }}>
+                <label htmlFor="attached-d">{attached.label}</label>
+                <select id="attached-d" value={f.attached} onChange={set("attached")}>
+                  <option value="">Choose one</option>{attached.opts.map((o) => <option key={o}>{o}</option>)}
+                </select>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Piers, insulation &amp; moisture — check all that apply</legend>
+              {MULTI.filter((m) => ["piers", "insulation", "moisture"].includes(m.id)).map((m) => (
                 <div key={m.id} style={{ marginBottom: 16 }}>
                   <label style={{ marginBottom: 8 }}>{m.label}</label>
                   <div className="chips">
@@ -114,11 +136,15 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
             </fieldset>
 
             <fieldset>
-              <legend>Sketch &amp; comments</legend>
+              <legend>Home sketch</legend>
               <SketchLauncher form={form}>
                 <PhotoSlot label="Home sketch" sub="Your saved drawing, or a photo of a hand-drawn sketch." items={sketch} onAdd={addSketch} onRemove={() => { setSketch([]); form.setVal("sketchData", null); }} max={1} sent={form.sentAhead} />
               </SketchLauncher>
-              <div className="field" style={{ marginTop: 16 }}><label htmlFor="generalComments">General comments</label><textarea id="generalComments" value={f.generalComments} onChange={set("generalComments")} /></div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Comments</legend>
+              <CommentFields f={f} setVal={form.setVal} />
             </fieldset>
 
             <div className="actions"><span /><button className="btn" onClick={() => { if (validate(["propertyAddress", "inspectorName", "clientName", "sendReportTo", "date"]) && form.confirmHud()) setStep(2); }}>Continue to photos →</button></div>
@@ -128,10 +154,8 @@ export default function DesktopForm({ form, onSwitchView, switchLabel }) {
         {step === 2 && (
           <section className="card">
             <h2>Photos</h2>
-            <p className="intro">Upload the pictures listed on the report. Every slot is optional, and you can add <b>as many photos as you need</b> to each one. Large photos are resized automatically. Use “Other pictures” for anything extra.</p>
-            {PHOTO_SLOTS.map((slot) => (
-              <PhotoSlot key={slot.id} label={`${slot.n}. ${slot.label}`} items={photos[slot.id]} onAdd={addTo(slot.id)} onRemove={removeFrom(slot.id)} checks={form.checks} sent={form.sentAhead}>{slot.id === "p03" && <TagFinding find={form.tagFind} f={f} setVal={form.setVal} />}</PhotoSlot>
-            ))}
+            <p className="intro">Add all your photos for this job at once: all four sides, tags, grading, attached structures, framing, tie-downs, belly wrap, venting, insulation, skirting and any deficiencies. No need to sort them; the engineer does that. Large photos are resized automatically.</p>
+            <PhotoUploader items={photos.unsorted || []} onAdd={addTo("unsorted")} onRemove={removeFrom("unsorted")} checks={form.checks} sent={form.sentAhead} adding={form.adding} />
             <div className="countbar" style={{ marginTop: 18 }}><span>{totalPhotos()} file{totalPhotos() === 1 ? "" : "s"} total (incl. sketch)</span><span /></div>
             <div className="actions">
               <button className="btn ghost" onClick={() => setStep(1)}>← Back</button>
