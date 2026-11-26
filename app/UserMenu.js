@@ -18,6 +18,12 @@ export default function UserMenu({ profile }) {
         <div className="um-who"><b>{name}</b><span>{profile.email}</span><span className="mono">{profile.viewingAs ? `Admin · previewing as ${roleLabel}` : roleLabel + extra}{profile.company && !profile.company.is_internal ? ` · ${profile.company.name}` : ""}</span></div>
         {(profile.role === "admin" || profile.realRole === "admin") && <ViewAsPicker current={profile.viewingAs || null} />}
         {(profile.role === "company_owner" || profile.role === "company_office") && <><a href="/billing">Billing</a><a href="/notifications">Notifications</a></>}
+        {!profile.viewingAs && <button type="button" onClick={async () => {
+          const v = window.prompt("Your name (as it appears on jobs and letters):", profile.full_name || "");
+          if (v === null || !v.trim() || v.trim() === profile.full_name) return;
+          const d = await fetch("/api/me", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fullName: v.trim() }) }).then((r) => r.json()).catch((e) => ({ ok: false, error: e.message }));
+          if (d.ok) window.location.reload(); else window.alert(d.error || "Couldn't save your name.");
+        }}>Change my name</button>}
         <form action="/auth/signout" method="post"><button type="submit">Sign out</button></form>
       </div>
     </details>

@@ -87,6 +87,17 @@ export default function People() {
     apply(d);
   }
 
+  const rename = (p) => {
+    const v = window.prompt(`Name for ${p.email}:`, p.full_name || "");
+    if (v !== null && v.trim() !== (p.full_name || "")) update(p.id, { fullName: v.trim() });
+  };
+  const nameCell = (p, extra) => (
+    <td>
+      {p.full_name || "—"}{p.id === me ? " (you)" : ""}
+      <button type="button" className="linklike hint" style={{ marginLeft: 6 }} onClick={() => rename(p)} aria-label={`Edit name for ${p.email}`}>Edit</button>
+      {extra}
+    </td>
+  );
   const shown = (people || []).filter((p) => showInactive || p.active);
   const staff = shown.filter((p) => p.site_role);
   // Everyone with a company role (staff too, e.g. Ron as an inspector at House & Home), plus anyone with no role at all.
@@ -186,7 +197,7 @@ export default function People() {
               <tbody>
                 {staff.map((p) => (
                   <tr key={p.id} style={p.active ? null : { opacity: 0.55 }}>
-                    <td>{p.full_name || "—"}{p.id === me ? " (you)" : ""}{p.site_role === "engineer" && <div><a className="hint" href={`/admin/engineer?id=${p.id}`}>PE details →</a></div>}</td>
+                    {nameCell(p, p.site_role === "engineer" && <div><a className="hint" href={`/admin/engineer?id=${p.id}`}>PE details →</a></div>)}
                     <td>{p.email}</td>
                     <td>{siteSelect(p)}{!p.company_id && internal && (
                       <div><button type="button" className="linklike hint" onClick={() => update(p.id, { companyId: internal.id, companyRole: "inspector" })}>+ Add a role at {internal.name}</button></div>
@@ -212,7 +223,7 @@ export default function People() {
                     const locked = !canSite && isStaff; // office managers can't change staff
                     return (
                       <tr key={p.id} style={p.active ? null : { opacity: 0.55 }}>
-                        <td>{p.full_name || "—"}{p.id === me ? " (you)" : ""}</td>
+                        {locked ? <td>{p.full_name || "—"}{p.id === me ? " (you)" : ""}</td> : nameCell(p)}
                         <td>{p.email}</td>
                         <td>
                           <select value={p.company_id || ""} disabled={locked} onChange={(e) => update(p.id, { companyId: e.target.value })} aria-label={`Company for ${p.email}`}>
