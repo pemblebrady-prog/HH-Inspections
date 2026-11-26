@@ -9,7 +9,8 @@ const ymd = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ""); return
 const FEE = { none: "No fee", unpaid: "Not paid yet", processing: "Processing (bank transfer)", paid: "Paid", failed: "Charge failed", waived: "Waived", refunded: "Refunded" };
 const OPEN = ["draft", "waiting", "awaiting_payment", "submitted"];
 
-export default function CorrectionsPanel({ job, rounds: initial, suggested, people, defaultFee, office, inspectorName, missing }) {
+// engineer=false (House & Home office managers, Nov 25): see the rounds and handle the fee, nothing else.
+export default function CorrectionsPanel({ job, rounds: initial, suggested, people, defaultFee, office, inspectorName, missing, engineer = true }) {
   const [rounds, setRounds] = useState(initial || []);
   const [status, setStatus] = useState(job.status);
   const [form, setForm] = useState(null); // { corrections, followupBy, assignedTo, fee, redo, editing }
@@ -162,11 +163,12 @@ export default function CorrectionsPanel({ job, rounds: initial, suggested, peop
     </>
   );
 
+  if (!engineer && !shown && !earlier.length) return null;
   return (
     <section className="card" style={{ marginTop: 18 }}>
       <h3 style={{ marginTop: 0 }}>Corrections{shown && shown.round > 1 ? ` (round ${shown.round})` : ""}</h3>
 
-      {canStart && !form && (
+      {engineer && canStart && !form && (
         <>
           <p className="hint" style={{ marginTop: 0 }}>Can't certify it? Send a corrections letter instead: what needs fixing and how to get it cleared. The follow-up stays on this job.</p>
           <button type="button" className="btn ghost" onClick={() => startForm(false)}>Corrections needed…</button>
@@ -189,7 +191,7 @@ export default function CorrectionsPanel({ job, rounds: initial, suggested, peop
             {feeLine(shown)}
           </tbody></table>
 
-          {shown.status === "draft" && (
+          {engineer && shown.status === "draft" && (
             <div className="stack" style={{ marginTop: 12 }}>
               {shown.letter_link ? <a className="btn" href={shown.letter_link} target="_blank" rel="noreferrer">Open corrections letter</a> : <p className="hint">No letter yet.</p>}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -211,20 +213,20 @@ export default function CorrectionsPanel({ job, rounds: initial, suggested, peop
 
           {shown.status === "waiting" && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-              <button type="button" className="viewswitch" disabled={!!busy} onClick={() => editForm(shown)}>Change follow-up or fee</button>
+              {engineer && <button type="button" className="viewswitch" disabled={!!busy} onClick={() => editForm(shown)}>Change follow-up or fee</button>}
               <button type="button" className="viewswitch" onClick={() => { const link = `${window.location.origin}/follow-up/${encodeURIComponent(job.ref)}`; navigator.clipboard && navigator.clipboard.writeText(link).then(() => setMsg(`Copied: ${link}`), () => setMsg(link)); }}>Copy follow-up link</button>
-              <button type="button" className="viewswitch" disabled={!!busy} onClick={() => { if (window.confirm("Cancel the corrections? The job goes back to Under review. (The letter that was sent isn't recalled.)")) call("cancel", {}, { reload: true }); }}>Cancel corrections</button>
+              {engineer && <button type="button" className="viewswitch" disabled={!!busy} onClick={() => { if (window.confirm("Cancel the corrections? The job goes back to Under review. (The letter that was sent isn't recalled.)")) call("cancel", {}, { reload: true }); }}>Cancel corrections</button>}
             </div>
           )}
 
           {["submitted", "cleared"].includes(shown.status) && followupDetails(shown)}
 
-          {shown.status === "submitted" && (
+          {engineer && shown.status === "submitted" && (
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
               <button type="button" className="btn" disabled={!!busy} onClick={() => call("clear", {}, { reload: true }).then((d) => d && setMsg("Clear letter made. Reloading…"))}>{busy === "clear" ? "Making clear letter…" : "Make clear letter"}</button>
             </div>
           )}
-          {canRedo && (
+          {engineer && canRedo && (
             <button type="button" className="btn ghost" style={{ marginTop: 10 }} disabled={!!busy} onClick={() => startForm(true)}>Still needs corrections…</button>
           )}
         </>

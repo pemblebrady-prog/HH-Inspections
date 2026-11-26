@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../../../lib/supabase/server";
 import { getDrive } from "../../../../../lib/drive";
 import { canSeeJob } from "../../../../../lib/jobAccess";
-import { isStaff } from "../../../../../lib/roles";
+import { isStaff, canEngineer } from "../../../../../lib/roles";
 import { canAddToJob, addJobFile, removeJobFile, alertFilesAdded, moveJobFiles } from "../../../../../lib/jobFiles";
 
 export const runtime = "nodejs";
@@ -80,7 +80,7 @@ export async function PUT(req, { params }) {
 // Staff: sort photos into sections. Body: { ids: [photo ids], slot }
 export async function PATCH(req, { params }) {
   const c = await load(decodeURIComponent(params.ref)); if (c.error) return c.error;
-  if (!isStaff(c.me)) return bad("Only House & Home staff can sort photos.", 403);
+  if (!canEngineer(c.me)) return bad("Only the engineer or an admin can sort photos.", 403);
   let b; try { b = await req.json(); } catch { return bad("Bad request"); }
   try {
     const r = await moveJobFiles(c.db, c.sub, b.ids, String(b.slot || ""));

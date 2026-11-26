@@ -15,6 +15,9 @@ export default async function Page() {
     // Engineers can submit their own inspections too (Ron inspects as well as certifies).
     // First sign-in: finish setup before submitting (House & Home staff skip this).
     if (!isStaff(profile) && !profile.onboarded_at) redirect("/welcome");
+    // Office managers don't submit jobs (Nov 25): House & Home's go to the office dashboard, a company's to its jobs.
+    if (profile.role === "office_manager") redirect("/admin/dashboard");
+    if (profile.role === "company_office") redirect("/jobs");
   }
   return <PortalPage profile={profile} />;
 }

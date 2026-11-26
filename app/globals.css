@@ -463,3 +463,24 @@ html.embedded .shell { padding-top: 8px; padding-bottom: 24px; }
 .sk-keylist div{display:flex;align-items:center;gap:8px}
 .sk-keybox{display:inline-block;min-width:30px;text-align:center;border:2px solid #1d2a33;padding:2px 4px;font-weight:700;background:#fff}
 .sk-keybox.red{border-color:#b3261e}
+/* Accounts receivable */
+.ar-totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px}
+.ar-totals div{display:flex;flex-direction:column;gap:2px}
+.ar-totals span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.ar-totals b{font-size:1.3rem}
+.ar-old{color:var(--err);font-weight:600}
+.ar-mid{color:#8a6d1f;font-weight:600}
+/* Office dashboard */
+.dash-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin:16px 0}
+.dash-tile{display:flex;flex-direction:column;gap:4px;padding:14px 16px;background:var(--paper);border:1px solid var(--line);border-radius:8px;text-decoration:none;color:var(--ink)}
+.dash-tile b{font-size:1.9rem;line-height:1}
+.dash-tile span{font-size:.9rem}
+.dash-tile em{font-style:normal;font-size:.78rem;color:var(--muted)}
+.dash-tile.alert{border-color:#e1a89f;background:#fbebeb}
+.dash-tile.alert b{color:var(--err)}
+.dash-tile.zero{opacity:.6}
+.dash-tile:hover{border-color:var(--steel)}
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.dash-list{list-style:none;margin:0;padding:0}
+.dash-list li{display:flex;flex-direction:column;padding:7px 0;border-top:1px solid var(--line)}
+.dash-list li:first-child{border-top:0}

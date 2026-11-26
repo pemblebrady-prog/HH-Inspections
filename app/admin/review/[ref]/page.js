@@ -11,7 +11,7 @@ import PhotoSorter from "./PhotoSorter";
 import { listRounds, houseAndHomePeople, getDefaultReinspectionCents, suggestedCorrections } from "../../../../lib/corrections";
 import { engineerForJob } from "../../../../lib/engineers";
 import { defaultRecipients } from "../../../../lib/delivery";
-import { isOffice } from "../../../../lib/roles";
+import { isOffice, canEngineer } from "../../../../lib/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +27,7 @@ export default async function ReviewJob({ params }) {
   if (!db) notFound();
   const ref = decodeURIComponent(params.ref);
   const isAdmin = !profile || isOffice(profile); // engineers don't see payments
+  const engineer = !profile || canEngineer(profile); // office managers don't do corrections, letters or certifying
   const { data: job } = await db.from("submissions")
     .select("*, company:companies(name, is_internal, phone, email), inspector:profiles!submissions_inspector_id_fkey(full_name, email, phone, certificate_number), reviewer:profiles!submissions_reviewed_by_fkey(full_name, email)")
     .eq("ref", ref).maybeSingle();
@@ -107,7 +108,7 @@ export default async function ReviewJob({ params }) {
 
           <aside>
             <section className="card">
-              <ReviewActions job={{ ref: job.ref, status: job.status, clear, payment_status: job.payment_status, letter_link: job.letter_link, drive_link: job.drive_link, review_notes: job.review_notes || "", photo_count: job.photo_count, final_pdf_link: job.final_pdf_link, delivered_to: job.delivered_to, recipients }} />
+              <ReviewActions job={{ ref: job.ref, status: job.status, clear, payment_status: job.payment_status, letter_link: job.letter_link, drive_link: job.drive_link, review_notes: job.review_notes || "", photo_count: job.photo_count, final_pdf_link: job.final_pdf_link, delivered_to: job.delivered_to, recipients, cannot_certify_reason: job.cannot_certify_reason || "" }} engineer={engineer} />
               <table className="kv small" style={{ marginTop: 16 }}><tbody>
                 {job.reviewer && <tr><th>Reviewer</th><td>{job.reviewer.full_name || job.reviewer.email}</td></tr>}
                 {job.certified_at && <tr><th>Certified</th><td>{fmt(job.certified_at)}</td></tr>}
@@ -117,7 +118,7 @@ export default async function ReviewJob({ params }) {
             <CorrectionsPanel
               job={{ ref: job.ref, status: job.status, internal: Boolean(job.company && job.company.is_internal), recipients: job.delivered_to && job.delivered_to.length ? await defaultRecipients(db, job) : recipients, stampOnFile: Boolean(eng.stampFileId || eng.signatureFileId) }}
               rounds={rounds} missing={missing} suggested={suggestedCorrections(f)} people={people} defaultFee={defaultFee}
-              office={isAdmin} inspectorName={job.inspector ? job.inspector.full_name || job.inspector.email : job.inspector_name} />
+              office={isAdmin} engineer={engineer} inspectorName={job.inspector ? job.inspector.full_name || job.inspector.email : job.inspector_name} />
             {isAdmin && (
               <section className="card" style={{ marginTop: 18 }}>
                 <PaymentActions job={{ ref: job.ref, payment_status: job.payment_status, amount_cents: job.amount_cents, refunded_cents: job.refunded_cents || 0, internal: Boolean(job.company && job.company.is_internal) }}
@@ -130,11 +131,11 @@ export default async function ReviewJob({ params }) {
         <section className="card" style={{ marginTop: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
             <h3>Photos ({photos.length})</h3>
-            {job.status !== "canceled" && <a className="btn ghost" style={{ padding: "6px 12px", textDecoration: "none" }} href={`/jobs/${encodeURIComponent(job.ref)}/photos`}>Add or replace photos / sketch</a>}
+            {engineer && job.status !== "canceled" && <a className="btn ghost" style={{ padding: "6px 12px", textDecoration: "none" }} href={`/jobs/${encodeURIComponent(job.ref)}/photos`}>Add or replace photos / sketch</a>}
           </div>
           {photos.some((p) => p.added_at) && <p className="hint" style={{ marginTop: 0 }}>Some photos were added after submitting{job.letter_link ? ". Tap Regenerate letter to put them in the letter" : ""}.</p>}
           {photos.length === 0 && <p className="hint">No photos recorded for this job yet. They appear once the inspector's upload finishes{job.drive_link ? "; you can also check the Drive folder" : ""}.</p>}
-          {photos.length > 0 && <PhotoSorter jobRef={job.ref} photos={photos} hasLetter={Boolean(job.letter_link)} canSort={job.status !== "canceled"} />}
+          {photos.length > 0 && <PhotoSorter jobRef={job.ref} photos={photos} hasLetter={Boolean(job.letter_link)} canSort={engineer && job.status !== "canceled"} />}
         </section>
       </div>
     </>

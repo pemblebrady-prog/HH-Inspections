@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../../lib/supabase/server";
 import { parseDollars } from "../../../../lib/pricing";
 import { recordLetter } from "../../../../lib/letterRecord";
-import { isOffice } from "../../../../lib/roles";
+import { isOffice, canEngineer } from "../../../../lib/roles";
 import {
   listRounds, openRound, startRound, updateRound, cancelRound, makeCorrectionsLetter, sendCorrectionsLetter,
   makeClearLetter, chargeFeeNow, refundFee, MISSING,
@@ -30,6 +30,8 @@ export async function POST(req) {
   const me = auth.profile;
   const origin = new URL(req.url).origin;
   if (["fee_charge", "fee_waive", "fee_refund"].includes(b.action) && me && !isOffice(me)) return bad("Only the office can change payments.", 403);
+  // Corrections are the engineer's (Nov 25): office managers only handle the re-inspection fee.
+  if (!["fee_charge", "fee_waive", "fee_refund"].includes(b.action) && me && !canEngineer(me)) return bad("Only the engineer or an admin can do corrections.", 403);
 
   const { rounds, missing, error } = await listRounds(db, sub.id);
   if (missing) return bad(MISSING, 500);

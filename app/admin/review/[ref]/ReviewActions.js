@@ -9,9 +9,16 @@ const NEXT = {
   on_hold:      [["start", "Start review anyway", "ghost"]],
   canceled:     [["reopen", "Restore", "ghost"]],
   corrections:  [], // waiting for the follow-up (see Corrections below)
+  cannot_certify: [],
 };
+// House & Home office managers (Nov 25): they can start a review, send a certified letter and close a
+// cannot-certify job; corrections, letters, certifying and reopening are the engineer's.
+const OFFICE_MOVES = ["start"];
+const CAN_REFUSE = ["submitted", "under_review", "corrections", "on_hold"];
 
-export default function ReviewActions({ job }) {
+export default function ReviewActions({ job, engineer = true }) {
+  const [refusing, setRefusing] = useState(false);
+  const [reason, setReason] = useState("");
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
@@ -49,7 +56,12 @@ export default function ReviewActions({ job }) {
       method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ref: job.ref, action, ...extra }),
     }).then((r) => r.json()).catch((e) => ({ ok: false, error: String(e) }));
     setBusy("");
+    if (d.needsConfirm) {
+      if (window.confirm(d.error)) return act(action, { ...extra, force: true });
+      return;
+    }
     if (!d.ok) { setErr(d.error || "Something went wrong"); return; }
+    if (action === "cannot_certify") { setMsg(`Marked cannot certify. ${d.emailed && d.emailed.length ? `Emailed ${d.emailed.join(", ")}.` : ""} Reloading…`); setTimeout(() => window.location.reload(), 2500); return; }
     if (action === "letter") { setLetter(d.submission.letter_link); setMsg("New draft letter created."); return; }
     if (action === "notes") { setMsg("Notes saved."); return; }
     window.location.reload();
@@ -58,16 +70,31 @@ export default function ReviewActions({ job }) {
   return (
     <div>
       <h3 style={{ marginTop: 0 }}>Actions</h3>
+      {job.status === "cannot_certify" && (
+        <div style={{ background: "#f6dcd6", padding: "10px 12px", borderRadius: 6, marginBottom: 12 }}>
+          <b>Cannot certify</b>
+          {job.cannot_certify_reason && <p style={{ margin: "6px 0" }}>{job.cannot_certify_reason}</p>}
+          <p className="hint" style={{ margin: 0 }}>
+            {["paid", "processing"].includes(job.payment_status) ? "The customer needs a refund (Payment, below). Then close the job." : "Nothing to refund. Close the job when you're ready."}
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+            <button className="btn" type="button" disabled={!!busy} onClick={() => { if (window.confirm("Close this job? It's marked canceled.")) act("close"); }}>{busy === "close" ? "Closing…" : "Close job"}</button>
+            {engineer && <button className="btn ghost" type="button" disabled={!!busy} onClick={() => act("review_again")}>{busy === "review_again" ? "Saving…" : "Review it again"}</button>}
+          </div>
+        </div>
+      )}
       <div className="stack">
-        {job.status === "corrections"
+        {job.status === "cannot_certify" ? null : job.status === "corrections"
           ? <p className="hint" style={{ margin: 0 }}>Waiting for the corrections follow-up (see Corrections below).</p>
           : <>
             {letter
               ? <a className="btn" href={letter} target="_blank" rel="noreferrer">{job.clear ? "Open clear letter" : "Open draft letter"}</a>
               : <p className="hint">No draft letter yet.</p>}
-            <button className="btn ghost" type="button" disabled={!!busy} onClick={() => act("letter")}>
-              {busy === "letter" ? "Making letter…" : letter ? (job.clear ? "Remake clear letter" : "Regenerate letter") : "Make draft letter"}
-            </button>
+            {engineer && (
+              <button className="btn ghost" type="button" disabled={!!busy} onClick={() => act("letter")}>
+                {busy === "letter" ? "Making letter…" : letter ? (job.clear ? "Remake clear letter" : "Regenerate letter") : "Make draft letter"}
+              </button>
+            )}
           </>}
         {job.drive_link && <a className="btn ghost" href={job.drive_link} target="_blank" rel="noreferrer">Open Drive folder</a>}
         {canSend && (
@@ -80,14 +107,29 @@ export default function ReviewActions({ job }) {
             {job.final_pdf_link && <a className="hint" href={job.final_pdf_link} target="_blank" rel="noreferrer">Last sent PDF</a>}
           </div>
         )}
-        {needsCertify && <p className="hint" style={{ margin: 0 }}>Mark the job certified (below) to send the final letter.</p>}
+        {needsCertify && <p className="hint" style={{ margin: 0 }}>{engineer ? "Mark the job certified (below) to send the final letter." : "The engineer marks it certified; then you can send the final letter here."}</p>}
         <hr />
-        {(NEXT[job.status] || []).map(([a, label, style]) => (
+        {(NEXT[job.status] || []).filter(([a]) => engineer || OFFICE_MOVES.includes(a)).map(([a, label, style]) => (
           <button key={a} className={"btn" + (style ? " " + style : "")} type="button" disabled={!!busy}
             onClick={() => { if (a !== "certify" || window.confirm("Mark this job certified? Do this once the letter is final. Then you can send it.")) act(a); }}>
             {busy === a ? "Saving…" : label}
           </button>
         ))}
+        {engineer && CAN_REFUSE.includes(job.status) && !refusing && (
+          <button className="btn ghost" type="button" disabled={!!busy} onClick={() => setRefusing(true)}>Cannot certify…</button>
+        )}
+        {refusing && (
+          <div className="send-box">
+            <b>Cannot certify this job</b>
+            <p className="hint" style={{ margin: "4px 0 8px" }}>For a home that can't be certified no matter what's fixed. The office is emailed to refund the customer and close the job. (If it can be fixed, use Corrections instead.)</p>
+            <label htmlFor="refuse" className="hint">Why? (the office sees this)</label>
+            <textarea id="refuse" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Home built before June 15, 1976 (not HUD code)" />
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button className="btn" type="button" disabled={!!busy || !reason.trim()} onClick={() => act("cannot_certify", { reason })}>{busy === "cannot_certify" ? "Saving…" : "Mark cannot certify"}</button>
+              <button className="btn ghost" type="button" disabled={!!busy} onClick={() => setRefusing(false)}>Cancel</button>
+            </div>
+          </div>
+        )}
       </div>
       <div className="field" style={{ marginTop: 16 }}>
         <label htmlFor="notes">Internal notes</label>

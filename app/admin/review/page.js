@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 const TABS = [
   ["queue", "Needs review", ["submitted", "under_review"]],
   ["corrections", "Corrections", ["corrections"]],
+  ["refund", "Cannot certify", ["cannot_certify"]], // Nov 25: waiting on the office to refund and close
   ["certified", "Certified", ["certified"]],
   ["delivered", "Delivered", ["delivered"]],
   ["all", "All", null],
@@ -38,9 +39,11 @@ export default async function ReviewQueue({ searchParams }) {
     if (tab[2]) q = q.in("status", tab[2]);
     const r = await q;
     if (r.error) err = r.error.message; else rows = r.data;
-    const c = await db.from("submissions").select("status").eq("is_demo", false).in("status", ["submitted", "under_review", "corrections"]);
-    counts.queue = (c.data || []).filter((x) => x.status !== "corrections").length;
+    let c = await db.from("submissions").select("status").eq("is_demo", false).in("status", ["submitted", "under_review", "corrections", "cannot_certify"]);
+    if (c.error) c = await db.from("submissions").select("status").eq("is_demo", false).in("status", ["submitted", "under_review", "corrections"]); // before 0019
+    counts.queue = (c.data || []).filter((x) => ["submitted", "under_review"].includes(x.status)).length;
     counts.corrections = (c.data || []).filter((x) => x.status === "corrections").length;
+    counts.refund = (c.data || []).filter((x) => x.status === "cannot_certify").length;
     // Jobs with a corrections round: tag follow-ups in the list (migration 0018).
     if (rows.length) {
       const fr = await db.from("correction_rounds").select("submission_id, status, round").in("submission_id", rows.map((r) => r.id)).neq("status", "canceled");

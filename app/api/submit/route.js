@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser, createAdminClient } from "../../../lib/supabase/server";
 import { withEffectivePrice, getDefaultPriceCents } from "../../../lib/pricing";
 import { getDrive, rootFolderId, findOrCreateFolder, createUniqueFolder, appendSubmission } from "../../../lib/drive";
-import { isStaff, isOffice } from "../../../lib/roles";
+import { isStaff, isOffice, canSubmitJobs } from "../../../lib/roles";
 
 export const runtime = "nodejs";
 
@@ -91,6 +91,7 @@ function clean(s) {
 export async function POST(req) {
   const auth = await requireUser();
   if (auth.error) return auth.error;
+  if (auth.profile && !canSubmitJobs(auth.profile)) return NextResponse.json({ ok: false, error: "Office managers can't submit jobs. Ask an inspector to submit it." }, { status: 403 });
   let data;
   try { data = await req.json(); }
   catch { return NextResponse.json({ ok: false, error: "Bad request" }, { status: 400 }); }

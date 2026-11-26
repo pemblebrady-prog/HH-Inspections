@@ -5,7 +5,7 @@ import { StatusPill } from "../../lib/statusLabels";
 import AppHeader from "../AppHeader";
 import { paysByCard } from "../../lib/payPerJob";
 import { payLabel } from "../../lib/payLabel";
-import { isOffice, isCompanyManager } from "../../lib/roles";
+import { isOffice, isCompanyManager, canSubmitJobs } from "../../lib/roles";
 import { canDoFollowup } from "../../lib/corrections";
 import { OPEN_FOR_INSPECTORS } from "../../lib/jobFiles";
 
@@ -60,6 +60,19 @@ export default async function MyJobs() {
     const assigned = b.error ? [] : (b.data || []).filter((x) => x.job && !mineOpen.some((m) => m.id === x.id));
     todo = [...mineOpen, ...assigned].filter((x) => canDoFollowup(profile, x.job, x));
   }
+  // Company owners and office managers (Nov 25): what's waiting on the company, and open orders for its inspectors.
+  let orders = [];
+  if (db && owner && profile.company_id) {
+    const { data: team } = await db.from("profiles").select("id").eq("company_id", profile.company_id);
+    const ids = (team || []).map((t) => t.id);
+    if (ids.length) {
+      const o = await db.from("orders").select("ref, status, property_address, scheduled_at, inspection_type, inspector:profiles!orders_inspector_id_fkey(full_name, email)")
+        .in("inspector_id", ids).in("status", ["new", "scheduled"]).order("scheduled_at", { ascending: true, nullsFirst: false }).limit(100);
+      if (!o.error) orders = o.data || [];
+    }
+  }
+  const toPay = rows.filter((r) => r.status === "on_hold" && ["unpaid", "failed"].includes(r.payment_status));
+  const refused = rows.filter((r) => r.status === "cannot_certify");
   const roundTag = { draft: "Corrections letter coming", waiting: "Follow-up needed", awaiting_payment: "Fee to pay", submitted: "Follow-up with the engineer", cleared: "Clear letter coming", redo: "More corrections" };
 
   return (
@@ -84,8 +97,28 @@ export default async function MyJobs() {
             ))}
           </div>
         )}
+        {owner && (toPay.length > 0 || refused.length > 0) && (
+          <div className="card" style={{ marginBottom: 16, padding: 18, borderColor: "#e8c9a6", background: "#fdf4ea" }}>
+            <b>Waiting on your company</b>
+            <ul style={{ margin: "6px 0 0 18px" }}>
+              {toPay.length > 0 && <li>{toPay.length} job{toPay.length === 1 ? " needs" : "s need"} payment: {toPay.map((r) => r.ref).join(", ")}. {payPerJob ? "Tap Pay now below." : <a href="/billing">Check your payment method</a>}</li>}
+              {refused.length > 0 && <li>{refused.length} job{refused.length === 1 ? "" : "s"} can't be certified ({refused.map((r) => r.ref).join(", ")}). House &amp; Home will refund the payment.</li>}
+            </ul>
+          </div>
+        )}
+        {owner && orders.length > 0 && (
+          <div className="card" style={{ marginBottom: 16, padding: 18 }}>
+            <b>Open orders for your inspectors ({orders.length})</b>
+            {orders.map((o) => (
+              <div key={o.ref} style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", borderTop: "1px solid var(--line)", padding: "8px 0" }}>
+                <span><b>{o.ref}</b> · {o.property_address || "—"}<br /><span className="hint">{o.inspection_type || "Inspection"} · {o.inspector ? o.inspector.full_name || o.inspector.email : "Unassigned"}</span></span>
+                <span className="hint" style={{ margin: 0 }}>{o.scheduled_at ? new Date(o.scheduled_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Phoenix" }) : "Not scheduled yet"}</span>
+              </div>
+            ))}
+          </div>
+        )}
         {err && <div className="card"><p className="err">Couldn't load jobs: {err}</p></div>}
-        {!err && rows.length === 0 && <div className="card"><p className="intro">No jobs yet. <a href="/">Submit your first one</a>.</p></div>}
+        {!err && rows.length === 0 && <div className="card"><p className="intro">No jobs yet.{canSubmitJobs(profile) ? <> <a href="/">Submit your first one</a>.</> : " Your inspectors' jobs show up here."}</p></div>}
         {rows.length > 0 && (
           <div className="table-wrap">
             <table className="track">

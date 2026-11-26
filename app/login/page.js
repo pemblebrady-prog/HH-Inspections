@@ -18,6 +18,9 @@ export default function Login() {
   const codeRef = useRef(null);
   useEffect(() => { if (step === "code") codeRef.current?.focus(); }, [step]);
   useEffect(() => {
+    // From the invite email's "Sign in and get set up" link: their email is already filled in.
+    const pre = (new URLSearchParams(window.location.search).get("email") || "").trim();
+    if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(pre)) setEmail(pre.toLowerCase());
     if (new URLSearchParams(window.location.search).get("error") === "link")
       setErr("That sign-in link expired or was opened in a different browser. Send a new one.");
   }, []);
