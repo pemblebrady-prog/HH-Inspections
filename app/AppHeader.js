@@ -6,7 +6,9 @@ import { ViewAsBanner } from "./ViewAs";
 
 // Where the logo goes for each role.
 export function homeFor(profile) {
-  if (profile && ["admin", "office_manager", "engineer"].includes(profile.role)) return "/admin/review";
+  if (profile && profile.role === "office_manager") return "/admin/dashboard";
+  if (profile && ["admin", "engineer"].includes(profile.role)) return "/admin/review";
+  if (profile && profile.role === "company_office") return "/jobs";
   return "/";
 }
 
@@ -19,11 +21,12 @@ function roleNav(profile) {
   const submit = { href: "/", label: "Submit a job" };
   const jobs = { href: "/jobs", label: "My jobs" };
   if (profile.role === "admin" || profile.role === "office_manager") return [
+    { href: "/admin/dashboard", label: "Dashboard" },
     { href: "/admin/orders", label: "Orders" },
     { href: "/admin/review", label: "Review queue" },
-    submit,
-    { href: "/?demo=1", label: "Practice job (demo)" },
+    ...(profile.role === "admin" ? [submit, { href: "/?demo=1", label: "Practice job (demo)" }] : []), // office managers don't submit (Nov 25)
     { href: "/admin/people", label: "People" },
+    { href: "/admin/receivables", label: "Accounts receivable" },
     { href: "/admin/statements", label: "Statements" },
     { href: "/admin/reports", label: "Reports" },
     { href: "/admin/companies", label: "Companies" },
@@ -32,7 +35,7 @@ function roleNav(profile) {
     { href: "/tracker", label: "Old tracker" },
   ];
   if (profile.role === "engineer") return [{ href: "/admin/review", label: "Review queue" }, { href: "/", label: "Submit a job" }, { href: "/jobs", label: "My jobs" }, { href: "/admin/engineer", label: "My PE details" }];
-  if (profile.role === "company_owner" || profile.role === "company_office") return [submit, { ...jobs, label: "Company jobs" }, { href: "/team", label: "My team" }, { href: "/billing", label: "Billing" }, { href: "/notifications", label: "Notifications" }];
+  if (profile.role === "company_owner" || profile.role === "company_office") return [...(profile.role === "company_owner" ? [submit] : []), { ...jobs, label: "Company jobs" }, { href: "/team", label: "My team" }, { href: "/billing", label: "Billing" }, { href: "/notifications", label: "Notifications" }];
   return [submit, jobs];
 }
 
